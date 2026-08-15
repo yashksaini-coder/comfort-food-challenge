@@ -328,7 +328,15 @@
   :root[data-motion="off"] .toggle__pause { display: none; }
   :root[data-motion="off"] .toggle__play { display: block; }
   .no-js .toggle { display: none; }
-  @media (max-width: 30rem) { #motion span { display: none; } #motion { padding-inline: .7rem; } }
+  @media (max-width: 30rem) {
+    /* visually hidden, not display:none — the accessible name has to survive,
+       because it is the only thing paint() keeps in sync with aria-pressed */
+    #motion span {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+    #motion { padding-inline: .7rem; }
+  }
 
   .progress {
     position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%;
@@ -960,7 +968,7 @@
   }
   /* counter-scale so the caption stays 10.9px instead of ballooning with its button */
   .chilli:hover .chilli__lbl { scale: .781; }
-  .chilli[aria-checked="true"] .chilli__lbl { scale: .714; color: var(--ink); }
+  .chilli[aria-checked="true"] .chilli__lbl { scale: .746; color: var(--ink); }
 
   .chilli-card { padding: 1.7rem 1.8rem; }
   .chilli-card h3 { font-size: var(--step-2); margin-block: .4rem .4rem; }
@@ -1742,8 +1750,7 @@
         <li><a href="#decide">Tonight</a></li>
       </ul>
     </nav>
-    <button type="button" class="toggle" id="motion" aria-pressed="false"
-            title="Stop the looping animations">
+    <button type="button" class="toggle" id="motion" aria-pressed="false">
       <svg class="toggle__ico" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13z" fill="none" stroke="currentColor" stroke-width="1.4"/>
         <path class="toggle__play" d="M6.4 5.2 11 8l-4.6 2.8z" fill="currentColor"/>
@@ -2027,7 +2034,9 @@
         about what to do next — and one of the three never turns up to make it.</p>
     </div>
 
-    <div class="fork__stage reveal" role="img" aria-describedby="fork-alt">
+    <div class="fork__stage reveal" role="img"
+         aria-label="Where the three dishes part: one base splitting into two gravies, with chilli chicken apart"
+         aria-describedby="fork-alt">
       <svg class="fork__lines" viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
         <!-- pathLength=1 normalises every path so one dashoffset value draws them all -->
         <path class="fork__line" pathLength="1" d="M43.6,15.3 C39,20 32,23 27,28.2"/>
@@ -2100,28 +2109,28 @@
       <div class="gantt__row">
         <p class="gantt__name">Chicken curry<small>42 min · one pan</small></p>
         <div class="gantt__track">
-          <span class="gantt__seg" style="--d:0;left:0%;width:40%;background:#97371A">Base · 18 min</span>
-          <span class="gantt__seg" style="--d:120;left:40.5%;width:10.5%;background:#A44A18">Sear</span>
-          <span class="gantt__seg on-light" data-short="18′" style="--d:240;left:51.5%;width:39.5%;background:#D08A44">Simmer · 18 min</span>
-          <span class="gantt__seg" style="--d:360;left:91.5%;width:8.5%;background:#8CBF3F"></span>
+          <span class="gantt__seg" style="--d:0;left:0%;width:39.3%;background:#97371A">Base · 18 min</span>
+          <span class="gantt__seg" style="--d:120;left:40%;width:8.2%;background:#A44A18">Sear</span>
+          <span class="gantt__seg on-light" data-short="18′" style="--d:240;left:48.9%;width:39.3%;background:#D08A44">Simmer · 18 min</span>
+          <span class="gantt__seg" style="--d:360;left:88.9%;width:4.4%;background:#8CBF3F"></span>
         </div>
       </div>
       <div class="gantt__row">
         <p class="gantt__name">Butter chicken<small>24 min · two pans</small></p>
         <div class="gantt__track">
           <span class="gantt__seg" data-short="10′" style="--d:60;left:0%;width:21.5%;background:#97371A">Base · 10 min</span>
-          <span class="gantt__seg on-light" style="--d:180;left:22%;width:13.5%;background:#D08A44">Blend</span>
-          <span class="gantt__seg on-light" style="--d:300;left:36%;width:15.5%;background:#F0A03C">Enrich</span>
-          <span class="gantt__seg parallel" data-short="Tandoor" style="--d:420;left:18%;width:20%;background:#5E4A3E">Tandoor, in parallel</span>
-          <span class="gantt__seg" style="--d:520;left:52%;width:6%;background:#8CBF3F"></span>
+          <span class="gantt__seg on-light" style="--d:180;left:22.2%;width:8.2%;background:#D08A44">Blend</span>
+          <span class="gantt__seg on-light" style="--d:300;left:31.1%;width:14.9%;background:#F0A03C">Enrich</span>
+          <span class="gantt__seg parallel" data-short="Tandoor" style="--d:420;left:17.8%;width:22.2%;background:#5E4A3E">Tandoor, in parallel</span>
+          <span class="gantt__seg" style="--d:520;left:46.7%;width:6.6%;background:#8CBF3F"></span>
         </div>
       </div>
       <div class="gantt__row">
         <p class="gantt__name">Chilli chicken<small>16 min · wok</small></p>
         <div class="gantt__track">
-          <span class="gantt__seg" style="--d:140;left:0%;width:17.5%;background:#5E4A3E">Batter</span>
-          <span class="gantt__seg on-light" style="--d:260;left:18%;width:8.5%;background:#F0A03C">Fry</span>
-          <span class="gantt__seg" data-short="4′" style="--d:380;left:27%;width:9%;background:#B32E10">Wok · 4′</span>
+          <span class="gantt__seg" style="--d:140;left:0%;width:17.1%;background:#5E4A3E">Batter</span>
+          <span class="gantt__seg on-light" style="--d:260;left:17.8%;width:8.2%;background:#F0A03C">Fry</span>
+          <span class="gantt__seg" data-short="4′" style="--d:380;left:26.7%;width:8.9%;background:#B32E10">Wok · 4′</span>
         </div>
       </div>
       <div class="gantt__axis">
@@ -2278,9 +2287,12 @@
 
     <div class="verdict card reveal" style="--i:2" id="verdict" data-empty="true">
       <p class="verdict__idle">Answer all three and the pan picks itself.</p>
+      <!-- always rendered, never display:none, so it is in the a11y tree before
+           the text lands. Kept short: the full reasoning is read at leisure below. -->
+      <p class="sr-only" id="v-live" aria-live="polite"></p>
       <div class="verdict__body">
         <p class="sub" id="v-sub"></p>
-        <h3 id="v-name" aria-live="polite"></h3>
+        <h3 id="v-name"></h3>
         <p id="v-why"></p>
         <a href="#split" id="v-link">Read the method →</a>
       </div>
@@ -2441,7 +2453,12 @@ const radioGroup = (container, items, build, onSelect) => {
       ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current"));
     ticking = false;
   };
-  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  const schedule = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  addEventListener("scroll", schedule, { passive: true });
+  /* catches resize, orientation change, tab panels of differing height, and late
+     font loading — anything that moves scrollHeight without firing a scroll */
+  if ("ResizeObserver" in window) new ResizeObserver(schedule).observe(document.body);
+  else addEventListener("resize", schedule);
   update();
 })();
 
@@ -2657,7 +2674,7 @@ const radioGroup = (container, items, build, onSelect) => {
       why: "Fast, loud, and it eats fine on its own. Get the oil properly hot and keep the green chillies in for under a minute." }
   };
   const v = $("#verdict");
-  const out = { name: $("#v-name"), sub: $("#v-sub"), why: $("#v-why"), link: $("#v-link") };
+  const out = { name: $("#v-name"), sub: $("#v-sub"), why: $("#v-why"), link: $("#v-link"), live: $("#v-live") };
   const answers = {};
   let last = null;
   const WEIGHTS = {
@@ -2684,6 +2701,7 @@ const radioGroup = (container, items, build, onSelect) => {
     out.link.textContent = `Read the ${d.name.toLowerCase()} method →`;
     out.link.onclick = () => window.__selectDish(d.tab);
     v.dataset.empty = "false";
+    out.live.textContent = `Tonight: ${d.name}. ${d.sub}.`;
   }));
 })();
 </script>
