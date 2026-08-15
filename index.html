@@ -229,6 +229,15 @@
     padding-block: clamp(4rem,2rem + 8vw,8.5rem);
     position: relative;
   }
+  /* Where the tone flips, the change of background IS the section break and the
+     stacked padding reads as a deliberate pause. Where two bands share a tone
+     there is no such signal, so the same 272px reads as a void. Trim the first
+     band's trailing padding — the second keeps its full lead-in, so every
+     .band__head still sits on the same rhythm. */
+  .band.paper:has(+ .band.paper),
+  .band.night:has(+ .band.night) {
+    padding-bottom: clamp(1.5rem,.5rem + 2vw,3rem);
+  }
   /* soft ember wash — brighter as the page descends toward the table */
   .band.night::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -893,7 +902,20 @@
   }
   .js .in .gantt__seg { transform: scaleX(1); transition: transform var(--dur-l) var(--ease); transition-delay: calc(var(--d,0) * 1ms); }
   .no-js .gantt__seg { transform: none; }
-  .gantt__seg.parallel { height: 56%; top: 22%; opacity: .96; border: 1px dashed #FFF3E066; }
+  /* The tandoor runs at the same time as the gravy, and overlaying it said so —
+     but it covered the blend and enrich segments and hid their durations. A
+     second lane underneath still shares the horizontal span, so it still reads
+     as simultaneous, without painting over the row it belongs to. */
+  .gantt__row:has(.parallel) .gantt__track { height: 4.2rem; }
+  /* :not(.parallel) is load-bearing — :has() contributes its argument's
+     specificity, so without it this rule outweighs .gantt__seg.parallel and
+     stretches the rail back to full height */
+  .gantt__row:has(.parallel) .gantt__seg:not(.parallel) { height: 2.6rem; }
+  .gantt__seg.parallel {
+    height: 1.3rem; top: auto; bottom: 0;
+    opacity: .96; border: 1px dashed #FFF3E066; font-size: .62rem;
+  }
+  @media (max-width: 64rem) { .gantt__seg.parallel::after { font-size: .6rem; } }
 
   .gantt__axis { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1.2rem; border-top: 1px solid var(--rule); margin-top: .7rem; padding-top: .6rem; }
   @media (max-width: 46rem) { .gantt__axis { grid-template-columns: 1fr; } .gantt__axis > span:first-child { display: none; } }
@@ -2109,8 +2131,8 @@
       <div class="gantt__row">
         <p class="gantt__name">Chicken curry<small>42 min · one pan</small></p>
         <div class="gantt__track">
-          <span class="gantt__seg" style="--d:0;left:0%;width:39.3%;background:#97371A">Base · 18 min</span>
-          <span class="gantt__seg" style="--d:120;left:40%;width:8.2%;background:#A44A18">Sear</span>
+          <span class="gantt__seg" data-short="18′" style="--d:0;left:0%;width:39.3%;background:#97371A">Base · 18 min</span>
+          <span class="gantt__seg" data-short="4′" style="--d:120;left:40%;width:8.2%;background:#A44A18">Sear</span>
           <span class="gantt__seg on-light" data-short="18′" style="--d:240;left:48.9%;width:39.3%;background:#D08A44">Simmer · 18 min</span>
           <span class="gantt__seg" style="--d:360;left:88.9%;width:4.4%;background:#8CBF3F"></span>
         </div>
@@ -2119,8 +2141,8 @@
         <p class="gantt__name">Butter chicken<small>24 min · two pans</small></p>
         <div class="gantt__track">
           <span class="gantt__seg" data-short="10′" style="--d:60;left:0%;width:21.5%;background:#97371A">Base · 10 min</span>
-          <span class="gantt__seg on-light" style="--d:180;left:22.2%;width:8.2%;background:#D08A44">Blend</span>
-          <span class="gantt__seg on-light" style="--d:300;left:31.1%;width:14.9%;background:#F0A03C">Enrich</span>
+          <span class="gantt__seg on-light" data-short="4′" style="--d:180;left:22.2%;width:8.2%;background:#D08A44">Blend</span>
+          <span class="gantt__seg on-light" data-short="7′" style="--d:300;left:31.1%;width:14.9%;background:#F0A03C">Enrich</span>
           <span class="gantt__seg parallel" data-short="Tandoor" style="--d:420;left:17.8%;width:22.2%;background:#5E4A3E">Tandoor, in parallel</span>
           <span class="gantt__seg" style="--d:520;left:46.7%;width:6.6%;background:#8CBF3F"></span>
         </div>
@@ -2128,8 +2150,8 @@
       <div class="gantt__row">
         <p class="gantt__name">Chilli chicken<small>16 min · wok</small></p>
         <div class="gantt__track">
-          <span class="gantt__seg" style="--d:140;left:0%;width:17.1%;background:#5E4A3E">Batter</span>
-          <span class="gantt__seg on-light" style="--d:260;left:17.8%;width:8.2%;background:#F0A03C">Fry</span>
+          <span class="gantt__seg" data-short="8′" style="--d:140;left:0%;width:17.1%;background:#5E4A3E">Batter</span>
+          <span class="gantt__seg on-light" data-short="4′" style="--d:260;left:17.8%;width:8.2%;background:#F0A03C">Fry</span>
           <span class="gantt__seg" data-short="4′" style="--d:380;left:26.7%;width:8.9%;background:#B32E10">Wok · 4′</span>
         </div>
       </div>
