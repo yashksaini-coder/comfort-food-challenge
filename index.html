@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gravy Theory — three chickens, one base</title>
+<meta name="description" content="Butter chicken and chicken curry come from the same onion–tomato base. Chilli chicken doesn't. An interactive field guide to reading North Indian gravy instead of following recipes.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#140D0A">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,0..100,0..1;1,9..144,400..900,0..100,0..1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<script>document.documentElement.classList.replace('no-js','js');</script>
+
+<style>
+@layer reset, tokens, motion, base, layout, nav, hero, kadai, meter, split, gantt, chart, dabba, decide, fork, thali, foot;
+
+/* Registered so the gravy colour actually interpolates. As plain custom properties
+   these are strings, so the dial's colour ramp stepped instead of transitioning. */
+@property --f    { syntax: "<percentage>"; inherits: true; initial-value: 100%; }
+@property --sep  { syntax: "<number>";     inherits: true; initial-value: 1; }
+@property --heat { syntax: "<number>";     inherits: true; initial-value: 1; }
+@property --gravy { syntax: "<color>";    inherits: true; initial-value: #B94A17; }
+
+/* ══════════════════════════════════════════════════════════
+   RESET
+   ══════════════════════════════════════════════════════════ */
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  img, svg { display: block; max-width: 100%; }
+  button, input { font: inherit; color: inherit; }
+  ul, ol { list-style: none; padding: 0; }
+  dl { margin: 0; }
+  fieldset { border: 0; padding: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOKENS
+
+   Three-act lighting. The page opens in a dark kitchen at
+   night, moves into warm daylight to explain itself, and
+   returns to the dark for the table at the end. Sections
+   carry .night or .paper and every component reads the same
+   token names, so nothing is hard-coded to one act.
+   ══════════════════════════════════════════════════════════ */
+@layer tokens {
+  :root {
+    /* pigments */
+    --saffron:  #F0A03C;
+    --hara:     #8CBF3F;
+
+    --display: "Fraunces", Georgia, serif;
+    --body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+    --step--1: clamp(.8rem,.775rem + .12vw,.86rem);
+    --step-0:  clamp(1.02rem,.98rem + .2vw,1.12rem);
+    --step-1:  clamp(1.2rem,1.08rem + .55vw,1.55rem);
+    --step-2:  clamp(1.9rem,1.4rem + 2.2vw,3.3rem);
+    --step-3:  clamp(2.9rem,1.7rem + 5.4vw,6.6rem);
+
+    --gutter: clamp(1.15rem,.5rem + 2.6vw,3.25rem);
+    --wide: 1180px;
+    --measure: 58ch;
+
+    --r-m: 22px;
+    --r-l: 34px;
+
+    /* One light source for the whole page: upper right, matching the ember
+       hotspots the bands already use. Every highlight and shadow obeys it —
+       mismatched light direction is the single biggest "this is vector art" tell. */
+    --lx: 78%; --ly: 18%;
+
+    /* Baked noise tile. stitchTiles='stitch' is mandatory or the tile seams
+       visibly at every 160px boundary. %23 is '#', %25 is '%'. */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .night {
+    --page:    #140D0A;
+    --surface: #211611;
+    --ink:     #F8EEDF;
+    --ink-2:   #BFA88F;
+    --rule:    #3C2920;
+    --accent:  var(--saffron);
+    --accent-ink: #241505;
+    --shadow:  0 26px 60px -28px #000000B8;
+    --glow:    #F0A03C24;
+  }
+
+  .paper {
+    --page:    #F6EAD6;
+    --surface: #FFFAF0;
+    --ink:     #2B1A11;
+    --ink-2:   #7B6350;
+    --rule:    #E4D2B7;
+    /* was #C4571A — 3.74:1 on the paper page, which failed AA on every eyebrow,
+       dt and legend in all four light sections. #A8410F measures 5.15:1. */
+    --accent:  #A8410F;
+    --accent-ink: #FFF6EA;
+    --shadow:  0 22px 46px -26px #7A4E2E4D;
+    --glow:    #C4571A14;
+  }
+
+  /* the toggle dims the paper acts rather than inverting the whole page,
+     because the dark bookends are art direction, not a preference */
+  :root[data-theme="dim"] .paper {
+    --page:    #191009;
+    --surface: #241811;
+    --ink:     #F8EEDF;
+    --ink-2:   #BFA88F;
+    --rule:    #3F2C20;
+    --accent:  var(--saffron);
+    --accent-ink: #241505;
+    --shadow:  0 26px 60px -28px #000000B8;
+    --glow:    #F0A03C1F;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOTION SYSTEM
+   1. Entrances ease OUT only — arriving things decelerate.
+   2. Duration scales with distance: 150ms hover, 560ms reveal.
+   3. Only transform and opacity animate; no layout thrash.
+   ══════════════════════════════════════════════════════════ */
+@layer motion {
+  :root {
+    --ease: cubic-bezier(.22,.68,.32,1);
+    --spring: cubic-bezier(.34,1.36,.5,1);
+    --dur-xs: 150ms; --dur-s: 220ms; --dur-m: 360ms; --dur-l: 560ms;
+    --stagger: 70ms;
+  }
+  .js .reveal {
+    opacity: 0; transform: translate3d(0,22px,0);
+    transition: opacity var(--dur-l) var(--ease), transform var(--dur-l) var(--ease);
+    transition-delay: calc(var(--i,0) * var(--stagger));
+  }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+      animation-delay: .001ms !important;
+      transition-duration: .001ms !important; transition-delay: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .js .reveal { opacity: 1; transform: none; }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   BASE
+   ══════════════════════════════════════════════════════════ */
+@layer base {
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+
+  body {
+    background: #140D0A; color: #F8EEDF;
+    font-family: var(--body); font-size: var(--step-0); line-height: 1.65;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--display); font-weight: 600;
+    font-variation-settings: "SOFT" 40, "WONK" 1;
+    line-height: 1.02; letter-spacing: -.02em;
+  }
+  h1 { font-size: var(--step-3); font-weight: 700; line-height: .96; letter-spacing: -.032em; }
+  h2 { font-size: var(--step-2); }
+  h3 { font-size: var(--step-1); }
+  p { max-width: var(--measure); }
+
+  a { color: var(--accent); text-underline-offset: .22em; }
+
+  :focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px;
+    box-shadow: 0 0 0 6px #140D0AE6;
+  }
+  ::selection { background: var(--saffron); color: #241505; }
+
+  /* the old monospace utility voice is gone — labels are now
+     wide-tracked small caps in the body face, which reads as
+     menu typography rather than telemetry */
+  .label {
+    display: inline-flex; align-items: center; gap: .6rem;
+    font-size: var(--step--1); font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--accent);
+  }
+  .label::before {
+    content: ""; width: 1.6rem; height: 2px; border-radius: 2px;
+    background: currentColor; opacity: .55; flex: none;
+  }
+
+  .lede { margin-top: 1.15rem; color: var(--ink-2); font-size: var(--step-1); line-height: 1.55; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+
+  /* every ingredient is an instance of one 48x48 symbol, so they all sit on the
+     same optical scale wherever they appear */
+  .ing { width: 2rem; height: 2rem; flex: none; overflow: visible; }
+
+  /* the filter and symbol sprites: defs only, never rendered */
+  .filter-bench { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  /* Film grain over everything. One fixed, tiled bitmap — the compositor treats
+     it as a static image, so it costs nothing to scroll. This is the cheapest
+     single move from "vector illustration" to "photographed thing". */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none;
+    background: var(--grain) 0 0 / 160px 160px repeat;
+    opacity: .055; mix-blend-mode: overlay;
+  }
+  @media print { body::after { display: none; } }
+}
+
+/* ══════════════════════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════════════════════ */
+@layer layout {
+  .wrap { width: min(100% - var(--gutter) * 2, var(--wide)); margin-inline: auto; }
+
+  .band {
+    background: var(--page); color: var(--ink);
+    padding-block: clamp(4rem,2rem + 8vw,8.5rem);
+    position: relative;
+  }
+  /* soft ember wash — brighter as the page descends toward the table */
+  .band.night::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(70% 55% at var(--lx) var(--ly), var(--glow), transparent 68%),
+      radial-gradient(125% 92% at 50% 50%, transparent 42%, #0A0503B8 100%);
+  }
+  .band > .wrap { position: relative; }
+
+  .band__head { margin-bottom: clamp(2.2rem,1rem + 3.5vw,3.75rem); }
+  .band__head h2 { margin-top: 1rem; max-width: 17ch; }
+
+  .card {
+    background: var(--surface); border-radius: var(--r-m);
+    box-shadow: var(--shadow); border: 1px solid var(--rule);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════════════════════ */
+@layer nav {
+  .skip {
+    position: fixed; left: .7rem; top: -5rem; z-index: 60;
+    background: var(--saffron); color: #241505; padding: .75rem 1.2rem;
+    border-radius: 999px; text-decoration: none; font-weight: 600;
+    transition: top var(--dur-s) var(--ease);
+  }
+  .skip:focus { top: .7rem; }
+
+  .masthead {
+    position: sticky; top: 0; z-index: 40;
+    background: #140D0ACC; backdrop-filter: blur(16px) saturate(1.5);
+    border-bottom: 1px solid #3C2920;
+    --ink: #F8EEDF; --ink-2: #BFA88F; --accent: var(--saffron);
+  }
+  .masthead__in { display: flex; align-items: center; gap: 1.3rem; height: 3.9rem; }
+
+  .logo {
+    font-family: var(--display); font-weight: 700; font-size: 1.15rem;
+    font-variation-settings: "SOFT" 40, "WONK" 1;
+    letter-spacing: -.02em; text-decoration: none; color: #F8EEDF;
+    display: flex; align-items: center; gap: .55rem;
+  }
+  .logo .dot {
+    width: .62rem; height: .62rem; border-radius: 50%; flex: none;
+    background: var(--saffron); box-shadow: 0 0 12px var(--saffron);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="off"]) .logo .dot { animation: pilot 2.8s var(--ease) infinite; }
+  }
+  @keyframes pilot { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .5; } }
+
+  .masthead nav { margin-left: auto; }
+  .masthead ul { display: flex; gap: .2rem; }
+  .masthead nav a {
+    display: block; padding: .58rem .85rem; border-radius: 999px;
+    color: #BFA88F; text-decoration: none; font-size: var(--step--1);
+    transition: color var(--dur-xs) var(--ease), background var(--dur-xs) var(--ease);
+  }
+  .masthead nav a:hover { color: #F8EEDF; background: #FFFFFF12; }
+  .masthead nav a[aria-current="true"] { color: #241505; background: var(--saffron); font-weight: 600; }
+
+  /* Below 58rem the nav used to be display:none, which left mobile with no way to
+     move between the six sections at all. It becomes a scrollable pill row instead. */
+  @media (max-width: 58rem) {
+    .masthead__in { flex-wrap: wrap; height: auto; padding-block: .55rem; gap: .6rem 1rem; }
+    .masthead nav {
+      order: 3; flex: 1 0 100%; margin-left: 0;
+      overflow-x: auto; overscroll-behavior-x: contain;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      mask-image: linear-gradient(90deg, #000 calc(100% - 2rem), transparent);
+    }
+    .masthead nav::-webkit-scrollbar { display: none; }
+    .masthead ul { gap: .35rem; padding-block: .1rem; width: max-content; }
+    .masthead nav a { white-space: nowrap; border: 1px solid #3C2920; }
+    /* nav has its own row, so the toggle is what pushes to the right edge */
+    .toggle { margin-left: auto; }
+  }
+
+  /* the nav carries the margin-left:auto on desktop; the toggle just follows it.
+     The old `.masthead nav ~ .toggle { margin-left:0 }` still matched below 58rem
+     where the nav was hidden, stranding the button in the middle of the bar. */
+  .toggle {
+    background: transparent; border: 1px solid #3C2920;
+    border-radius: 999px; min-height: 2.5rem; padding-inline: 1rem; cursor: pointer;
+    font-size: var(--step--1); font-weight: 500; letter-spacing: .06em; color: #BFA88F;
+    transition: border-color var(--dur-xs) var(--ease), color var(--dur-xs) var(--ease);
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: .45rem;
+  }
+  .toggle:hover { border-color: var(--saffron); color: var(--saffron); }
+  .toggle__ico { width: 1rem; height: 1rem; flex: none; }
+  /* the icon shows what the button will DO, matching its label */
+  .toggle__play { display: none; }
+  :root[data-motion="off"] .toggle__pause { display: none; }
+  :root[data-motion="off"] .toggle__play { display: block; }
+  .no-js .toggle { display: none; }
+  @media (max-width: 30rem) { #motion span { display: none; } #motion { padding-inline: .7rem; } }
+
+  .progress {
+    position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%;
+    background: var(--saffron); transform: scaleX(var(--p,0)); transform-origin: left;
+  }
+  .no-js .progress { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   HERO
+   ══════════════════════════════════════════════════════════ */
+@layer hero {
+  .hero {
+    position: relative; overflow: hidden;
+    padding-block: clamp(3rem,1.5rem + 7vw,6.5rem) clamp(2.5rem,1rem + 4vw,4.5rem);
+    background: var(--page);
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(52% 52% at 76% 44%, #F0A03C3D, transparent 66%),
+      radial-gradient(40% 40% at 12% 88%, #D6431F1F, transparent 70%),
+      radial-gradient(120% 95% at 50% 45%, transparent 46%, #0A0503C4 100%);
+  }
+  /* the ember wash used to paint over the stats row, veiling one figure and not the others */
+  .hero > .wrap { position: relative; z-index: 1; }
+  .hero__grid { position: relative; display: grid; gap: clamp(2.5rem,1rem + 5vw,4.5rem); align-items: center; }
+  @media (min-width: 62rem) { .hero__grid { grid-template-columns: 1.05fr .95fr; } }
+
+  .hero h1 { max-width: 13ch; margin-block: 1.1rem 1.5rem; }
+  .hero h1 .ln { display: block; }
+  .hero h1 em {
+    font-style: italic; color: var(--saffron);
+    font-variation-settings: "SOFT" 80, "WONK" 1;
+  }
+  .hero__deck { font-size: var(--step-1); line-height: 1.55; color: var(--ink-2); max-width: 44ch; }
+  .hero__deck strong { color: var(--ink); font-weight: 600; }
+
+  .js .hero .lift {
+    opacity: 0; transform: translate3d(0,26px,0);
+    animation: lift var(--dur-l) var(--ease) forwards;
+    animation-delay: calc(var(--i) * 95ms);
+  }
+  @keyframes lift { to { opacity: 1; transform: none; } }
+
+  .hero__cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2rem; }
+  .btn {
+    display: inline-flex; align-items: center; gap: .6rem;
+    min-height: 3.1rem; padding-inline: 1.6rem; border-radius: 999px;
+    text-decoration: none; font-weight: 600; font-size: var(--step-0);
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform var(--dur-xs) var(--spring), box-shadow var(--dur-xs) var(--ease),
+                background var(--dur-xs) var(--ease), color var(--dur-xs) var(--ease);
+  }
+  .btn--solid { background: var(--saffron); color: #241505; box-shadow: 0 10px 30px -12px #F0A03C99; }
+  .btn--solid:hover { transform: translateY(-2px); box-shadow: 0 16px 38px -12px #F0A03CB3; }
+  .btn--ghost { border-color: #FFFFFF2E; color: var(--ink); }
+  .btn--ghost:hover { border-color: var(--saffron); color: var(--saffron); transform: translateY(-2px); }
+
+  /* rotating stamp — the one purely decorative thing on the page,
+     and the piece that most signals "kitchen" over "dashboard" */
+  /* anchored to the content column, not the full-bleed hero — it used to drift into
+     the pan around 1100px and float alone in the margin on very wide screens */
+  .stamp {
+    position: absolute; right: 0; top: 0; translate: 28% -34%;
+    width: clamp(96px,11vw,132px); aspect-ratio: 1;
+    display: grid; place-items: center; z-index: 3;
+  }
+  @media (max-width: 62rem) { .stamp { display: none; } }
+  .stamp svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .stamp text { fill: var(--saffron); font-size: 9.6px; font-weight: 600; text-transform: uppercase; }
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="off"]) .stamp svg { animation: spin 22s linear infinite; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stamp b {
+    font-family: var(--display); font-size: 1.55rem; font-weight: 700; color: var(--ink);
+    font-variation-settings: "SOFT" 60, "WONK" 1; line-height: 1;
+  }
+
+  /* marquee — spice ticker, the strip every restaurant page has */
+  .ticker {
+    position: relative; overflow: hidden; background: var(--saffron); color: #241505;
+    padding-block: .85rem; border-block: 1px solid #00000024;
+  }
+  .ticker__row { display: flex; width: max-content; }
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="off"]) .ticker__row { animation: slide 34s linear infinite; }
+    .ticker:hover .ticker__row { animation-play-state: paused; }
+  }
+  @keyframes slide { to { transform: translateX(-50%); } }
+  .ticker span {
+    display: flex; align-items: center; gap: 2.4rem; padding-right: 2.4rem;
+    font-family: var(--display); font-weight: 600; font-size: 1.05rem;
+    font-variation-settings: "SOFT" 60, "WONK" 1; white-space: nowrap;
+  }
+  .ticker i { width: .42rem; height: .42rem; border-radius: 50%; background: #241505; opacity: .5; }
+
+  /* stats */
+  .stats {
+    display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem 1rem;
+    margin-top: clamp(2.5rem,1rem + 4vw,4rem); padding-top: 2.2rem;
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 44rem) { .stats { grid-template-columns: repeat(4,1fr); } }
+  .stats dt {
+    font-family: var(--display); font-weight: 700; font-size: clamp(2.1rem,1.4rem + 2.2vw,3rem);
+    font-variation-settings: "SOFT" 60, "WONK" 1; color: var(--saffron); line-height: 1;
+  }
+  .stats dd { margin: .45rem 0 0; font-size: var(--step--1); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   KADAI — shared food object
+   ══════════════════════════════════════════════════════════ */
+@layer kadai {
+  /* ─── the vessel ────────────────────────────────────────────
+     Seasoned cast iron, lit from the upper right like everything
+     else on the page. The old version was one conic gradient and
+     a single black drop shadow, which reads as a flat disc.      */
+  .kadai {
+    --c1: #E0A184; --c2: #6B2109; --f: 100%; --sep: 1; --heat: 1;
+    /* aspect-ratio:1 with no ceiling turned this into a 924px circle the moment
+       its grid collapsed to one column — 420px matches the desktop track */
+    width: min(100%, 420px); margin-inline: auto;
+    position: relative; aspect-ratio: 1; border-radius: 50%;
+    background:
+      var(--grain) 0 0 / 128px 128px repeat,
+      conic-gradient(from 208deg, #3A342F, #635850 16%, #2E2925 40%,
+                     #524840 62%, #262120 85%, #3A342F);
+    background-blend-mode: soft-light, normal;
+    padding: 7.5%;
+    box-shadow:
+      inset 0 0 0 5px #262019,               /* the wall has thickness      */
+      inset -7px 9px 16px -7px #FFE7C98F,    /* rim catches the light, UR   */
+      inset 8px -11px 20px -8px #000000D9,   /* and falls into dark, LL     */
+      inset 0 -22px 38px -26px #8A4A1685,    /* warm bounce off the gravy   */
+      0 2px 3px #1A0600B3,                   /* contact — it sits on a page */
+      0 16px 28px -10px #1A0600C4,
+      0 44px 68px -32px #1A0600;
+    isolation: isolate;
+  }
+  /* ember ring — the burner underneath */
+  .kadai::before {
+    content: ""; position: absolute; inset: -9%; border-radius: 50%; z-index: -1;
+    background: radial-gradient(closest-side, #F0A03C00 58%, #F0A03C4D 72%, #D6431F00 100%);
+    /* punch the pan out of it — .kadai isolates, so a z-index:-1 child paints
+       ABOVE the parent background and was washing the cast iron warm-brown */
+    mask: radial-gradient(closest-side, transparent 0 84%, #000 85%);
+    opacity: var(--heat);
+    transition: opacity var(--dur-m) var(--ease);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="off"]) .kadai.live::before { animation: flicker 3.4s ease-in-out infinite; }
+  }
+  @keyframes flicker {
+    0%,100% { transform: scale(1);    opacity: calc(var(--heat) * .9); }
+    45%     { transform: scale(1.05); opacity: var(--heat); }
+  }
+
+  /* ─── the gravy ─────────────────────────────────────────────
+     Three separable optical layers. Real food has an opaque
+     pigmented base, warm light that scatters INSIDE the material,
+     and a hard specular glint off the fat on top. Collapsing the
+     last two into one soft blob is what makes CSS food look like
+     a pie chart.                                                 */
+  .kadai__pool {
+    /* one resolved colour, reused by every layer. Registering it as a <color>
+       means the dial's ramp interpolates instead of stepping. */
+    --gravy: color-mix(in oklch, var(--c2) var(--f), var(--c1));
+    position: relative; width: 100%; height: 100%; border-radius: 50%;
+    background:
+      /* suspended ground spice */
+      var(--grain) 0 0 / 96px 96px repeat,
+      /* uneven pigment — masala is never evenly mixed */
+      conic-gradient(from 18deg at 54% 46%,
+        #0000001C, #FFFFFF14 32%, #00000024 58%, #FFFFFF0E 79%, #0000001C),
+      /* ambient occlusion where the gravy meets the pan wall */
+      radial-gradient(closest-side, transparent 68%, #5E1E0980 100%),
+      /* base: holds its colour across the middle, darkens only at the FAR rim */
+      radial-gradient(132% 132% at 62% 112%,
+        var(--gravy) 0%, var(--gravy) 46%,
+        color-mix(in oklch, var(--gravy) 72%, #351206) 100%);
+    background-blend-mode: soft-light, overlay, multiply, normal;
+    box-shadow: inset 0 8px 20px #0000005E, inset 0 -5px 14px #00000040;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  /* the hero pan gets a ragged liquid boundary; the interactive pan does not,
+     because a displacement filter would re-run every frame while you drag */
+  .kadai.plated .kadai__pool { filter: url(#gravyEdge); }
+
+  /* subsurface: wide, offset toward the light, blurred, screened.
+     This is the GLOW. It is deliberately big and soft and coloured. */
+  .kadai__pool::before {
+    content: ""; position: absolute; inset: -6%;
+    background:
+      radial-gradient(58% 44% at 66% 30%, #F0A03C7A, #D6431F2E 54%, transparent 74%),
+      radial-gradient(34% 26% at 33% 68%, #F0A03C54, transparent 72%);
+    filter: blur(9px);
+    opacity: calc(.35 + var(--sep) * .55); mix-blend-mode: screen;
+    transition: opacity var(--dur-s) linear;
+  }
+  /* the doneness cue: oil pooling at the rim */
+  .kadai__pool::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    box-shadow: inset 0 0 0 4px #EFA24E8A, inset 0 0 18px 10px #C4611C4D;
+    opacity: var(--sep); transition: opacity var(--dur-s) linear;
+  }
+
+  /* specular: small, hard, warm-white, up and to the right.
+     Glow is big + blurry + coloured; glint is small + sharp + white.
+     That separation is the whole difference between chart and ghee. */
+  .kadai__lit { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+  .kadai__lit::before {
+    content: ""; position: absolute; left: 58%; top: 17%;
+    width: 15%; aspect-ratio: 2.1; border-radius: 50%;
+    background: linear-gradient(100deg, #FFFDF4, #FFE9BE 62%, #FFD79200);
+    rotate: -22deg; filter: blur(1.1px);
+    opacity: calc(.45 + var(--sep) * .5); mix-blend-mode: screen;
+  }
+  /* broad sheen across the top of the liquid */
+  .kadai__lit::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: linear-gradient(196deg, #FFF6E23D 0%, #FFF6E200 38%);
+  }
+
+  /* ─── chicken ───────────────────────────────────────────────
+     Eight-value border-radius, different per piece, varied rotation.
+     Repeated silhouettes read instantly as clones, so nothing here
+     shares a shape. #char merges soot blotches over the top.       */
+  .kadai__pieces { position: absolute; inset: 0; }
+  .kadai__pieces i {
+    position: absolute; display: block; width: var(--w, 25%); aspect-ratio: 1.22;
+    left: var(--x); top: var(--y); translate: -50% -50%; rotate: var(--rot, 0deg);
+    border-radius: var(--r);
+    background:
+      radial-gradient(66% 60% at 36% 28%, #F7BC6E, #D26C27 46%, #93400F 100%);
+    box-shadow:
+      inset 0 -4px 7px #4A1706A8,      /* underside turns away from the light */
+      inset 0 3px 5px #FFCE8F5E,       /* top edge catches it                 */
+      0 4px 9px -2px #2A0C02B8;        /* and it sits IN the gravy, not on it */
+    filter: url(#char);
+  }
+  /* gravy washes over the near edge of every piece */
+  .kadai__pieces::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(126% 126% at 62% 114%, #7A2E1200 44%, #4A1A0B3D 86%);
+    mix-blend-mode: multiply; pointer-events: none;
+  }
+
+  /* browned onion and spice sediment — the interactive pan's texture.
+     These used to be near-black tadpoles that read as dirt in the pan. */
+  .kadai__bits { position: absolute; inset: 0; opacity: .62; }
+  .kadai__bits i {
+    position: absolute; width: 5.2%; aspect-ratio: 1.9; translate: -50% -50%;
+    border-radius: 62% 38% 47% 53% / 44% 56% 44% 56%;
+    background: linear-gradient(150deg, #8A4A1FBF, #3D1707D9);
+    box-shadow: 0 1px 2px #2A0C0266, inset 0 1px 1px #E0A16640;
+    filter: blur(.5px);
+  }
+
+  /* ─── garnish ───────────────────────────────────────────────
+     Cream and butter live in a #goo group so the dollops fuse with
+     surface tension instead of stacking like stickers. The specular
+     layer stays OUTSIDE the group or the glint gets blurred away.   */
+  .kadai__garnish { position: absolute; inset: 0; filter: url(#goo); }
+  .kadai__garnish i { position: absolute; display: block; translate: -50% -50%; }
+  .kadai__garnish .cream {
+    background: radial-gradient(66% 66% at 38% 32%, #FFF8E7, #F6E4C2 68%, #E9CFA4);
+    opacity: .92;
+  }
+  .kadai__garnish .cream:nth-child(1) { left: 39%; top: 44%; width: 17%; aspect-ratio: 2.0;
+    border-radius: 58% 42% 47% 53% / 44% 56% 44% 56%; rotate: -14deg; }
+  .kadai__garnish .cream:nth-child(2) { left: 56%; top: 52%; width: 21%; aspect-ratio: 2.6;
+    border-radius: 41% 59% 63% 37% / 52% 38% 62% 48%; rotate: 9deg; }
+  .kadai__garnish .cream:nth-child(3) { left: 44%; top: 60%; width: 16%; aspect-ratio: 1.4;
+    border-radius: 66% 34% 38% 62% / 61% 55% 45% 39%; rotate: -31deg; }
+  .kadai__garnish .butter {
+    left: 62%; top: 38%; width: 12%; aspect-ratio: 1.1;
+    border-radius: 34% 66% 40% 60% / 52% 44% 56% 48%;
+    background: linear-gradient(154deg, #FFEFB4, #F2C45C);
+    rotate: -12deg;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="off"]) .live .kadai__garnish .butter { animation: melt 6s var(--ease) infinite alternate; }
+  }
+  @keyframes melt {
+    to { scale: .84; border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%; opacity: .86; }
+  }
+
+  /* coriander: a leaf with a spine, not a green pill */
+  .leaf {
+    position: absolute; width: 8.5%; aspect-ratio: 1.45;
+    border-radius: 74% 8% 74% 8%;
+    background: linear-gradient(140deg, #A6D451, #6E9E28 55%, #47701A);
+    box-shadow: 0 2px 5px #1A060080;
+  }
+  .leaf::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(140deg, transparent 46%, #2E4E1173 47.5%, transparent 49%);
+  }
+
+  /* ─── steam ─────────────────────────────────────────────────
+     Steam is mostly invisible with occasional visible curls. A uniform
+     blurry white blob reads as fog and kills the appetite instantly,
+     so: screen blend, .3 opacity ceiling, and masked into columns.   */
+  .steam { position: absolute; inset: -14% 0 0; pointer-events: none; opacity: var(--heat); }
+  .steam i {
+    position: absolute; bottom: 34%; width: 16%; aspect-ratio: 1;
+    border-radius: 50%; background: #FFF3E0; filter: blur(14px); opacity: 0;
+    mix-blend-mode: screen;
+  }
+  .steam i:nth-child(1) { left: 27%; }
+  .steam i:nth-child(2) { left: 44%; width: 20%; }
+  .steam i:nth-child(3) { left: 62%; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* the filter is static — only the source translates, so the noise is
+       rasterised once instead of regenerated every frame */
+    .live .steam { filter: url(#wisp); }
+    :root:not([data-motion="off"]) .live .steam i { animation: rise 5s ease-in-out infinite; }
+    :root:not([data-motion="off"]) .live .steam i:nth-child(2) { animation-duration: 6.2s; animation-delay: -2.1s; }
+    :root:not([data-motion="off"]) .live .steam i:nth-child(3) { animation-duration: 5.5s; animation-delay: -3.6s; }
+  }
+  @keyframes rise {
+    0%   { transform: translateY(18%) scale(.6); opacity: 0; }
+    35%  { opacity: .28; }
+    100% { transform: translateY(-160%) scale(1.6); opacity: 0; }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   BHUNA METER
+   ══════════════════════════════════════════════════════════ */
+@layer meter {
+  .lab { display: grid; gap: clamp(1.8rem,1rem + 3.5vw,3.5rem); }
+  @media (min-width: 62rem) {
+    .lab { grid-template-columns: minmax(0,420px) 1fr; }
+    /* the grid item stretches so the pan has room to travel; it then stays in
+       view while you read the six stages next to it, which is the whole point
+       of pairing a dial with a ladder */
+    .lab > :first-child { position: relative; }
+    .lab > :first-child .kadai { position: sticky; top: 5.5rem; }
+  }
+
+  .dial { margin-top: 2rem; }
+  .dial__label {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    margin-bottom: .85rem; font-size: var(--step--1);
+  }
+  .dial__label label { font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .dial__hint { color: var(--ink-2); }
+  /* below ~26rem the tracked label and the hint both wrap, leaving a four-line
+     jumble above the dial. Drop the visual arrows; the description survives. */
+  @media (max-width: 26rem) {
+    .dial__label { flex-wrap: wrap; }
+    .dial__hint-vis { display: none; }
+  }
+
+  .dial input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%;
+    background: transparent; cursor: grab; padding-block: 1.1rem;
+    touch-action: manipulation;
+  }
+  .dial input[type="range"]:active { cursor: grabbing; }
+  .dial input[type="range"]::-webkit-slider-runnable-track {
+    height: 10px; border-radius: 999px;
+    background: linear-gradient(90deg,#E0A184,#CF7043,#B44A1E,#97371A,#5E1E09);
+    box-shadow: inset 0 1px 3px #0006;
+  }
+  .dial input[type="range"]::-moz-range-track {
+    height: 10px; border-radius: 999px;
+    background: linear-gradient(90deg,#E0A184,#CF7043,#B44A1E,#97371A,#5E1E09);
+  }
+  .dial input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 30px; height: 30px; margin-top: -10px; border-radius: 50%;
+    background: radial-gradient(closest-side,#FFF3E0,#E7C79A);
+    border: 3px solid var(--accent);
+    box-shadow: 0 4px 14px #0000005E;
+    transition: transform var(--dur-xs) var(--spring);
+  }
+  .dial input[type="range"]::-moz-range-thumb {
+    width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--accent);
+    background: radial-gradient(closest-side,#FFF3E0,#E7C79A); box-shadow: 0 4px 14px #0000005E;
+  }
+  .dial input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.16); }
+
+  .ticks { display: grid; grid-template-columns: repeat(5,1fr); margin-top: .7rem; }
+  .ticks span {
+    text-align: center; font-size: .7rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-2); font-weight: 500;
+    transition: color var(--dur-xs) var(--ease);
+  }
+  .ticks span[data-on="true"] { color: var(--accent); font-weight: 700; }
+
+  .readout {
+    margin-top: 1.8rem; padding: 1.5rem 1.6rem; border-radius: var(--r-m);
+    background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow);
+  }
+  .readout__meta {
+    display: flex; flex-wrap: wrap; gap: .4rem 1.6rem;
+    font-size: var(--step--1); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .readout__meta b { color: var(--accent); font-weight: 700; }
+  .readout h3 { margin: .65rem 0 .45rem; }
+  .readout p { color: var(--ink-2); }
+
+  /* the shared cast: six ingredients, in the order they hit the pan.
+     Numbered by counter so the sequence is the content, not decoration. */
+  .cast {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: .5rem; counter-reset: cast;
+    margin-bottom: clamp(2rem,1rem + 3vw,3.25rem);
+    padding-block: 1.4rem; border-block: 1px solid var(--rule);
+  }
+  .cast li {
+    counter-increment: cast; position: relative;
+    display: grid; justify-items: center; gap: .3rem; text-align: center;
+    padding: .5rem .4rem;
+  }
+  .cast li::before {
+    content: counter(cast, decimal-leading-zero);
+    font-size: .62rem; letter-spacing: .16em; color: var(--accent);
+    font-variant-numeric: tabular-nums; font-weight: 700;
+  }
+  /* a hairline connector, because these happen in sequence */
+  .cast li:not(:last-child)::after {
+    content: ""; position: absolute; right: -.25rem; top: 3.1rem;
+    width: .5rem; height: 1px; background: var(--rule);
+  }
+  @media (max-width: 34rem) { .cast li::after { display: none; } }
+  .cast .ing { width: 3rem; height: 3rem; }
+  .cast b { font-size: var(--step--1); font-weight: 600; color: var(--ink); }
+  .cast span { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+
+  .ladder { border-top: 1px solid var(--rule); margin-top: 2rem; }
+  .ladder li {
+    display: grid; grid-template-columns: 1.9rem 3.4rem 1fr; gap: .9rem;
+    align-items: center; padding: .7rem 0; border-bottom: 1px solid var(--rule);
+    color: var(--ink-2); font-size: var(--step--1);
+    transition: color var(--dur-xs) var(--ease);
+  }
+  /* the ingredient for a stage you have not reached yet is dimmed and desaturated;
+     it comes up as the dial passes its mark */
+  .ladder .ing {
+    width: 1.9rem; height: 1.9rem;
+    opacity: .34; filter: saturate(.25);
+    transition: opacity var(--dur-m) var(--ease), filter var(--dur-m) var(--ease);
+  }
+  .ladder li[data-live="true"] .ing { opacity: 1; filter: none; }
+  .ladder b {
+    font-weight: 600; font-variant-numeric: tabular-nums lining-nums; color: var(--ink);
+    transition: color var(--dur-xs) var(--ease);
+  }
+  @media (max-width: 30rem) {
+    .ladder li { grid-template-columns: 1.6rem 2.9rem 1fr; gap: .7rem; }
+    .ladder .ing { width: 1.6rem; height: 1.6rem; }
+  }
+  .ladder li[data-live="true"] { color: var(--ink); }
+  .ladder li[data-live="true"] b { color: var(--accent); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   THE SPLIT
+   ══════════════════════════════════════════════════════════ */
+@layer split {
+  .tabs { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .tabs button {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 999px;
+    min-height: 3rem; padding-inline: 1.4rem; cursor: pointer;
+    font-size: var(--step-0); font-weight: 500; color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: .7rem;
+    transition: border-color var(--dur-xs) var(--ease), color var(--dur-xs) var(--ease),
+                background var(--dur-xs) var(--ease), transform var(--dur-xs) var(--spring);
+  }
+  .tabs button i { width: .85rem; height: .85rem; border-radius: 50%; flex: none; box-shadow: inset 0 -2px 4px #0003; }
+  .tabs button:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-2px); }
+  .tabs button[aria-selected="true"] {
+    background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600;
+  }
+  .no-js .tabs { display: none; }
+
+  .dish { margin-top: 2.2rem; }
+  .js .dish[hidden] { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .js .dish:not([hidden]) { animation: swap var(--dur-m) var(--ease); }
+  }
+  @keyframes swap { from { opacity: 0; transform: translate3d(0,12px,0); } }
+
+  .dish__grid { display: grid; gap: clamp(1.4rem,.8rem + 2.2vw,2.6rem); }
+  @media (min-width: 56rem) { .dish__grid { grid-template-columns: 1.05fr .95fr; } }
+  .dish__tag { font-size: var(--step--1); font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  .dish h3 { margin: .7rem 0 1rem; font-size: var(--step-2); }
+  .dish p { color: var(--ink-2); }
+  .dish p + p { margin-top: 1rem; }
+
+  .diverge { padding: 1.6rem 1.7rem; align-self: start; }
+  /* what this dish puts on top of the shared base — the ingredients are the
+     argument, so they lead the card rather than sitting in the prose */
+  .adds {
+    display: grid; gap: .55rem; margin-bottom: 1.4rem;
+    padding-bottom: 1.3rem; border-bottom: 1px solid var(--rule);
+    font-size: var(--step--1); font-weight: 600; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  .adds__row { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
+  .adds .ing { width: 2.8rem; height: 2.8rem; }
+  .adds em {
+    font-style: normal; font-weight: 400; letter-spacing: .01em;
+    text-transform: none; font-size: .82rem; color: var(--ink-2);
+  }
+  .adds--none { color: var(--hara); }
+  .diverge__h { font-size: var(--step--1); font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 1.1rem; }
+  .diverge dl { display: grid; gap: .9rem; }
+  .diverge__row { display: grid; grid-template-columns: 6.2rem 1fr; gap: 1rem; align-items: baseline; }
+  .diverge dt { font-weight: 600; color: var(--accent); font-size: var(--step--1); letter-spacing: .04em; }
+  .diverge dd { margin: 0; color: var(--ink-2); font-size: var(--step--1); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   THE CLOCK
+   ══════════════════════════════════════════════════════════ */
+@layer gantt {
+  .gantt__row { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1.2rem; align-items: center; padding-block: .7rem; }
+  @media (max-width: 46rem) { .gantt__row { grid-template-columns: 1fr; gap: .4rem; } }
+  .gantt__name { font-family: var(--display); font-weight: 600; font-size: 1.05rem; font-variation-settings: "SOFT" 40, "WONK" 1; }
+  .gantt__name small { display: block; font-family: var(--body); font-weight: 400; font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-top: .15rem; }
+  .gantt__track { position: relative; height: 2.6rem; }
+  .gantt__seg {
+    position: absolute; top: 0; height: 100%; border-radius: 999px;
+    display: grid; place-items: center; overflow: hidden;
+    padding-inline: .55rem;
+    font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+    color: #FFF3E0; white-space: nowrap;
+    transform: scaleX(0); transform-origin: left;
+    box-shadow: inset 0 -3px 8px #00000038;
+  }
+  /* text-shadow does not count toward contrast — the light fills need dark ink */
+  .gantt__seg.on-light { color: #2A1206; }
+  /* below 56rem several labels needed more width than their segment and were
+     clipped mid-word by overflow:hidden; swap in the short form instead */
+  @media (max-width: 64rem) {
+    .gantt__seg { padding-inline: .3rem; }
+    .gantt__seg[data-short] { font-size: 0; }
+    .gantt__seg[data-short]::after { content: attr(data-short); font-size: .68rem; }
+  }
+  /* the shortest segments — Sear at 10.5% and Fry at 8.5% of the track — have no
+     shorter word to fall back to, so they get the padding and a little type size */
+  @media (max-width: 34rem) {
+    .gantt__seg { padding-inline: .15rem; font-size: .66rem; }
+    .gantt__seg[data-short]::after { font-size: .64rem; }
+  }
+  .js .in .gantt__seg { transform: scaleX(1); transition: transform var(--dur-l) var(--ease); transition-delay: calc(var(--d,0) * 1ms); }
+  .no-js .gantt__seg { transform: none; }
+  .gantt__seg.parallel { height: 56%; top: 22%; opacity: .96; border: 1px dashed #FFF3E066; }
+
+  .gantt__axis { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1.2rem; border-top: 1px solid var(--rule); margin-top: .7rem; padding-top: .6rem; }
+  @media (max-width: 46rem) { .gantt__axis { grid-template-columns: 1fr; } .gantt__axis > span:first-child { display: none; } }
+  .gantt__mins { display: flex; justify-content: space-between; font-size: .76rem; color: var(--ink-2); letter-spacing: .06em; font-variant-numeric: tabular-nums lining-nums; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; margin-top: 1.6rem; font-size: var(--step--1); color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: .5rem; }
+  .legend i { width: .9rem; height: .9rem; border-radius: 50%; flex: none; }
+
+  .pull { margin-top: 2.4rem; padding: 1.8rem 2rem; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow); }
+  .pull p { font-family: var(--display); font-weight: 500; font-size: var(--step-1); line-height: 1.4; max-width: 50ch; font-variation-settings: "SOFT" 60, "WONK" 1; }
+  .pull b { color: var(--accent); font-weight: 700; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CHILLI CHART
+   ══════════════════════════════════════════════════════════ */
+@layer chart {
+  .chart-grid { display: grid; gap: clamp(1.8rem,1rem + 3.5vw,3.5rem); }
+  @media (min-width: 62rem) { .chart-grid { grid-template-columns: 1.15fr .85fr; align-items: center; } }
+
+  .plot {
+    position: relative; aspect-ratio: 4/3; border-radius: var(--r-m);
+    background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow);
+    background-image:
+      radial-gradient(closest-side, var(--rule) 1px, transparent 1px);
+    background-size: 12.5% 12.5%;
+    background-position: center;
+  }
+  .plot__x, .plot__y { display: block; font-size: var(--step--1); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+  .plot__y { margin-bottom: .7rem; }
+  .plot__x { margin-top: .9rem; text-align: center; }
+  .plot__note { margin-top: 1.6rem; font-size: var(--step--1); color: var(--ink-2); }
+  @media (min-width: 48rem) {
+    .plot-wrap {
+      display: grid; grid-template-columns: auto minmax(0,1fr);
+      grid-template-areas: "y plot" ". x" ". note"; column-gap: .9rem;
+    }
+    .plot__y {
+      grid-area: y; margin: 0; place-self: center;
+      writing-mode: vertical-rl; transform: rotate(180deg);
+    }
+    .plot { grid-area: plot; }
+    .plot__x { grid-area: x; }
+    .plot__note { grid-area: note; }
+  }
+
+  .chilli {
+    position: absolute; width: 2.5rem; height: 2.5rem;
+    background: none; border: 0; cursor: pointer; padding: 0; translate: -50% -50%;
+    display: grid; place-items: center;
+    transition: transform var(--dur-s) var(--spring);
+  }
+  .chilli__art {
+    width: 100%; height: 100%; rotate: var(--rot, 0deg);
+    filter: drop-shadow(0 2px 4px #1A060059);
+    pointer-events: none;
+  }
+  /* the visual is a chilli; the hit target stays a comfortable 56px square */
+  .chilli::after { content: ""; position: absolute; inset: -.4rem; border-radius: 30%; }
+  .chilli:hover { transform: scale(1.28); }
+  .chilli[aria-checked="true"] { transform: scale(1.34); }
+  .chilli[aria-checked="true"]::before {
+    content: ""; position: absolute; inset: -.15rem; border-radius: 50%;
+    border: 2px solid var(--accent); box-shadow: 0 0 18px var(--accent);
+  }
+  .chilli__lbl {
+    position: absolute; left: 50%; top: 132%; translate: -50% 0;
+    font-size: .68rem; font-weight: 600; letter-spacing: .04em; color: var(--ink-2);
+    white-space: nowrap; pointer-events: none;
+    transform-origin: top center;
+  }
+  /* counter-scale so the caption stays 10.9px instead of ballooning with its button */
+  .chilli:hover .chilli__lbl { scale: .781; }
+  .chilli[aria-checked="true"] .chilli__lbl { scale: .714; color: var(--ink); }
+
+  .chilli-card { padding: 1.7rem 1.8rem; }
+  .chilli-card h3 { font-size: var(--step-2); margin-block: .4rem .4rem; }
+  .chilli-card .sub { font-size: var(--step--1); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .chilli-card .nums { display: flex; gap: 2rem; margin: 1.2rem 0; }
+  .chilli-card .nums dt { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+  .chilli-card .nums dd {
+    margin: .2rem 0 0; font-family: var(--display); font-weight: 700; font-size: var(--step-1);
+    font-variation-settings: "SOFT" 60, "WONK" 1; color: var(--accent);
+    font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  }
+  .chilli-card > p { color: var(--ink-2); }
+  /* the whole wrapper, so JS-off doesn't leave an axis caption and a note with no chart */
+  .no-js .chilli-card, .no-js .plot-wrap { display: none; }
+  .chart-fallback { display: none; }
+  .no-js .chart-fallback { display: block; }
+  .chart-fallback li, .dabba-fallback li { padding: .7rem 0; border-bottom: 1px solid var(--rule); color: var(--ink-2); }
+  .chart-fallback b, .dabba-fallback b { color: var(--ink); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MASALA DABBA
+   ══════════════════════════════════════════════════════════ */
+@layer dabba {
+  .dabba-grid { display: grid; gap: clamp(2rem,1rem + 4vw,4rem); }
+  @media (min-width: 58rem) { .dabba-grid { grid-template-columns: minmax(0,390px) 1fr; align-items: center; } }
+
+  /* same anisotropic steel as the thali — two opposed bright arcs over a
+     spun-brushed base, so the box reads as metal rather than a grey circle */
+  .dabba {
+    width: min(100%, 390px); margin-inline: auto;
+    position: relative; aspect-ratio: 1; border-radius: 50%;
+    background:
+      var(--grain) 0 0 / 130px 130px repeat,
+      conic-gradient(from -12deg,
+        #FFFFFF00 0deg, #FFFFFF80 36deg, #FFFFFF00 84deg,
+        #00000040 148deg, #FFFFFF00 194deg, #FFFFFF63 230deg,
+        #FFFFFF00 282deg, #00000033 332deg, #FFFFFF00 360deg),
+      repeating-conic-gradient(from 0deg at 50% 50%,
+        #EEF2F5 0deg .55deg, #CFD7DD .55deg 1.1deg,
+        #E4EAEF 1.1deg 1.65deg, #D8E0E6 1.65deg 2.2deg),
+      linear-gradient(#DCE3E8, #B9C3CA);
+    background-blend-mode: soft-light, overlay, normal, normal;
+    box-shadow:
+      inset 0 0 0 4px #6E7A84,
+      inset -6px 8px 14px -6px #FFFFFF9E,
+      inset 7px -9px 18px -7px #0000006B,
+      inset 0 0 40px #00000059,
+      0 2px 3px #1A060099, 0 30px 64px -28px #000000A6;
+  }
+  .dabba::after { content: ""; position: absolute; inset: 9%; border-radius: 50%; box-shadow: inset 0 0 0 1px #FFFFFF4D; pointer-events: none; }
+  .spice {
+    position: absolute; width: 27%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
+    padding: 0; cursor: pointer; border: 2px solid #C0CAD1;
+    /* highlight sits off-centre, up and to the right, like everything else */
+    background:
+      var(--grain) 0 0 / 46px 46px repeat,
+      radial-gradient(closest-side at 34% 26%, #FFFFFF4D, #00000012 46%, #00000073 100%),
+      var(--sc);
+    background-blend-mode: soft-light, normal, normal;
+    box-shadow:
+      inset 0 0 0 1px #00000059,          /* the tin's own lip */
+      inset 0 5px 11px #0000007D;         /* ground spice sits down in it */
+    display: grid; grid-template-rows: minmax(0,1fr) auto; place-items: center;
+    padding: 0; overflow: hidden; min-height: 0;
+    transition: transform var(--dur-s) var(--spring), box-shadow var(--dur-s) var(--ease);
+  }
+  .spice__art {
+    width: 62%; height: auto; aspect-ratio: 1; align-self: end;
+    filter: drop-shadow(0 1px 2px #0000006B);
+  }
+  .spice:hover { transform: scale(1.09); }
+  .spice[aria-checked="true"] {
+    transform: scale(1.07);
+    box-shadow: inset 0 0 0 1px #00000059, inset 0 5px 11px #0000007D,
+                0 0 0 4px var(--page), 0 0 0 7px var(--saffron), 0 0 26px var(--saffron);
+  }
+  /* per-tin ink: cream on haldi was 2.00:1. Five of seven tins failed at 9.9px. */
+  .spice__name {
+    font-size: .56rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--si, #FFF3E0); pointer-events: none; text-align: center; line-height: 1.1;
+    max-width: 88%; padding-bottom: .35rem;
+  }
+  .spice * { pointer-events: none; }
+
+  .spice-card { padding: 1.8rem 1.9rem; }
+  .spice-card h3 { font-size: var(--step-2); margin-block: .4rem 0; }
+  .spice-card .sub { font-size: var(--step--1); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .spice-card dl { display: grid; gap: 1rem; margin-top: 1.4rem; }
+  .spice-card__row { display: grid; grid-template-columns: 5.6rem 1fr; gap: 1.1rem; align-items: baseline; }
+  .spice-card dt { font-size: var(--step--1); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .spice-card dd { margin: 0; color: var(--ink-2); }
+  .no-js .spice-card, .no-js div.dabba { display: none; }
+  .no-js .dabba-grid { grid-template-columns: 1fr; }
+  .dabba-fallback { display: none; }
+  .no-js .dabba-fallback { display: block; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DECIDER
+   ══════════════════════════════════════════════════════════ */
+@layer decide {
+  /* the decider needs JS; hide its nav link too, or the anchor resolves to a
+     zero-height element and the browser silently jumps to the footer */
+  .no-js #decide, .no-js .masthead a[href="#decide"] { display: none; }
+  .quiz { display: grid; gap: 1.9rem; max-width: 48rem; }
+  .q legend { font-size: var(--step--1); font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: .9rem; }
+  .opts { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .opts label {
+    position: relative; display: grid; place-items: center;
+    min-height: 3rem; padding-inline: 1.35rem; border-radius: 999px;
+    border: 1px solid var(--rule); background: var(--surface);
+    font-size: var(--step-0); color: var(--ink-2); cursor: pointer;
+    transition: border-color var(--dur-xs) var(--ease), color var(--dur-xs) var(--ease),
+                background var(--dur-xs) var(--ease), transform var(--dur-xs) var(--spring);
+  }
+  .opts label:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-2px); }
+  .opts input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .opts input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 8px; border-radius: 999px; }
+  .opts label:has(input:checked) { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+  .verdict { margin-top: 2.4rem; padding: 2rem 2.1rem; border-radius: var(--r-l); }
+  .verdict[data-empty="true"] .verdict__body { display: none; }
+  .verdict__idle { color: var(--ink-2); font-family: var(--display); font-size: var(--step-1); font-variation-settings: "SOFT" 60, "WONK" 1; }
+  .verdict[data-empty="false"] .verdict__idle { display: none; }
+  .verdict .sub { font-size: var(--step--1); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .verdict h3 { font-size: var(--step-2); margin-block: .45rem .8rem; }
+  .verdict p { color: var(--ink-2); }
+  .verdict a { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.3rem; font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) { .verdict__body { animation: swap var(--dur-m) var(--ease); } }
+}
+
+/* ══════════════════════════════════════════════════════════
+   THE FORK — the signature scene
+
+   The lines do the work. Rather than translating the pans apart
+   with brittle percentage maths, the two curves DRAW from the
+   base outward (stroke-dashoffset over a normalised pathLength),
+   and the gravies scale up behind them. Only transform, opacity
+   and dashoffset animate. Nothing here reflows.
+   ══════════════════════════════════════════════════════════ */
+@layer fork {
+  /* the defector animates in from off-frame, which briefly pushed the document
+     wider than the viewport on tablets. `clip` contains it without creating a
+     scroll container the way `hidden` would. */
+  .fork { overflow-x: clip; }
+  .fork__stage {
+    position: relative; width: min(100%, 1000px); margin: clamp(1rem,3vw,3rem) auto 0;
+    aspect-ratio: 100 / 56;
+  }
+  @media (max-width: 46rem) { .fork__stage { aspect-ratio: 100 / 104; } }
+
+  .fork__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .fork__line {
+    fill: none; stroke: var(--saffron); stroke-width: 2;
+    stroke-linecap: round; vector-effect: non-scaling-stroke;
+    opacity: .75;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+  }
+  .fork__line--dead { stroke-dasharray: .06 .05; stroke: var(--ink-2); opacity: .55; }
+  .js .fork__stage.in .fork__line {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 900ms var(--ease) var(--d, 0ms);
+  }
+  .js .fork__stage.in .fork__line--dead {
+    /* it sets off and stops: the dashes stay, the line just never reaches */
+    stroke-dashoffset: 0; transition: stroke-dashoffset 600ms var(--ease) var(--d);
+  }
+  .no-js .fork__line { stroke-dashoffset: 0; }
+
+  /* the pans sit at their final positions from the first frame; the entrance is
+     scale + opacity, which the compositor handles without touching layout */
+  /* The pans are absolutely positioned, so `padding: 7.5%` on .kadai resolved
+     against the STAGE (1000px) instead of the pan (190px) and ate the entire
+     vessel. Percentage insets on an absolutely positioned child resolve against
+     the positioned ancestor's own padding box, which is what we actually want. */
+  .fork__pan {
+    position: absolute; left: var(--x); top: var(--y); width: var(--w);
+    margin-inline: 0; translate: -50% -50%; padding: 0;
+  }
+  .fork__pan > .kadai__pool,
+  .fork__pan > .wok__pool {
+    position: absolute; inset: 7.5%; width: auto; height: auto;
+  }
+  .fork__pan.wok > .wok__pool { inset: 9%; }
+  .js .fork__stage:not(.in) .fork__pan--child { opacity: 0; scale: .5; }
+  .js .fork__stage.in .fork__pan--child {
+    opacity: 1; scale: 1;
+    transition: opacity 620ms var(--ease) var(--d), scale 880ms var(--spring) var(--d);
+  }
+  /* the defector arrives from off-frame, then stops */
+  .js .fork__stage:not(.in) .fork__pan--outsider { opacity: 0; translate: 34% -50%; }
+  .js .fork__stage.in .fork__pan--outsider {
+    opacity: 1; translate: -50% -50%;
+    transition: opacity 700ms var(--ease) var(--d), translate 1000ms var(--ease) var(--d);
+  }
+
+  /* the wok: shallower, wider, blacker than a kadai, and it never held a base */
+  .wok {
+    position: absolute; aspect-ratio: 1; border-radius: 50%;
+    background:
+      var(--grain) 0 0 / 92px 92px repeat,
+      conic-gradient(from 200deg, #1C1815, #3A322C 18%, #171310 44%, #322A24 66%, #141110 88%, #1C1815);
+    background-blend-mode: soft-light, normal;
+    padding: 9%;
+    box-shadow:
+      inset 0 0 0 4px #141110,
+      inset -5px 7px 13px -5px #FFE7C976,
+      inset 6px -9px 16px -6px #000000E6,
+      0 2px 3px #1A0600B3, 0 14px 26px -10px #1A0600C4, 0 38px 60px -30px #1A0600;
+    isolation: isolate;
+  }
+  .wok__pool {
+    position: relative; width: 100%; height: 100%; border-radius: 50%;
+    background:
+      var(--grain) 0 0 / 70px 70px repeat,
+      radial-gradient(closest-side, transparent 58%, #0E0805CC 100%),
+      radial-gradient(126% 126% at 62% 112%, #6B4520 0%, #6B4520 44%, #2A1808 100%);
+    background-blend-mode: soft-light, multiply, normal;
+    box-shadow: inset 0 8px 20px #00000073;
+    overflow: hidden; isolation: isolate;
+  }
+  .wok__slit {
+    position: absolute; left: 38%; top: 44%; width: 44%; height: 9%;
+    border-radius: 999px; rotate: -22deg; translate: -50% -50%;
+    background: linear-gradient(160deg, #A6D451, #6E9E28 58%, #47701A);
+    box-shadow: 0 2px 4px #0A0F0499;
+  }
+  .wok__slit + .wok__slit { left: 62%; top: 62%; width: 38%; rotate: 14deg; }
+
+  /* captions hang below each vessel and inherit its delay */
+  .fork__tag {
+    position: absolute; left: var(--x); top: var(--y); translate: -50% 0;
+    padding-top: .6rem;
+    width: max-content; max-width: 15ch; text-align: center;
+    font-size: var(--step--1); font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .fork__tag b {
+    display: block; margin-top: .3rem; font-weight: 400; letter-spacing: .02em;
+    text-transform: none; color: var(--ink-2); font-size: .78rem; line-height: 1.35;
+  }
+  /* one place that owns every position, so the breakpoint can actually move them */
+  .fork__pan--base     { --x: 50%; --y: 16%; --w: 18%; }
+  .fork__pan--curry    { --x: 27%; --y: 70%; --w: 22%; --d: 520ms; }
+  .fork__pan--makhani  { --x: 70%; --y: 70%; --w: 22%; --d: 660ms; }
+  .fork__pan--outsider { --x: 93%; --y: 42%; --w: 16%; --d: 1000ms; }
+  .fork__tag--base  { --x: 50%; --y: 16%; --d: 0ms;    margin-top: 10%; }
+  .fork__tag--left  { --x: 27%; --y: 70%; --d: 520ms;  margin-top: 12%; }
+  .fork__tag--right { --x: 70%; --y: 70%; --d: 660ms;  margin-top: 12%; }
+  .fork__tag--out   { --x: 93%; --y: 42%; --d: 1100ms; margin-top: 9%; color: var(--hara); }
+  .fork__tag--out b { color: var(--ink-2); }
+  .js .fork__stage:not(.in) .fork__tag { opacity: 0; transform: translateY(8px); }
+  .js .fork__stage.in .fork__tag {
+    opacity: 1; transform: none;
+    transition: opacity 520ms var(--ease) var(--d), transform 520ms var(--ease) var(--d);
+  }
+
+  /* mobile: the fork turns vertical — base, then the two below it, then the
+     defector off to one side with the same broken connector */
+  @media (max-width: 46rem) {
+    .fork__pan--base     { --x: 50%; --y: 10%; --w: 26%; }
+    .fork__pan--curry    { --x: 25%; --y: 41%; --w: 30%; }
+    .fork__pan--makhani  { --x: 75%; --y: 41%; --w: 30%; }
+    .fork__pan--outsider { --x: 50%; --y: 76%; --w: 26%; }
+    .fork__tag--base  { --x: 50%; --y: 10%; margin-top: 15%; }
+    .fork__tag--left  { --x: 25%; --y: 41%; margin-top: 17%; }
+    .fork__tag--right { --x: 75%; --y: 41%; margin-top: 17%; }
+    .fork__tag--out   { --x: 50%; --y: 76%; margin-top: 15%; }
+    .fork__tag { max-width: 11ch; font-size: .68rem; }
+    .fork__tag b { font-size: .7rem; }
+    /* the connectors carry the argument, so they get re-drawn for the vertical
+       stack rather than dropped. The viewBox is unchanged; only `d` moves. */
+    .fork__line:nth-of-type(1) { d: path("M40.8,10.5 C35,13 27,13.5 25,14.5"); }
+    .fork__line:nth-of-type(2) { d: path("M59.2,10.5 C65,13 73,13.5 75,14.5"); }
+    .fork__line--dead          { d: path("M50,30 L50,36"); }
+  }
+  /* if the browser cannot animate `d` from CSS the desktop paths would be wrong
+     here, so hide them rather than draw lines that point at nothing */
+  @supports not (d: path("M0,0")) {
+    @media (max-width: 46rem) { .fork__lines { display: none; } }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   THALI CLOSER
+   ══════════════════════════════════════════════════════════ */
+@layer thali {
+  .closer { position: relative; overflow: hidden; }
+  .closer::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(56% 56% at 70% 46%, #F0A03C33, transparent 68%);
+  }
+  .closer__grid { position: relative; display: grid; gap: clamp(2.5rem,1rem + 5vw,4.5rem); align-items: center; }
+  @media (min-width: 60rem) { .closer__grid { grid-template-columns: 1fr minmax(0,420px); } }
+  .closer h2 { max-width: 16ch; margin-block: 1rem 1.3rem; }
+  .closer p { font-size: var(--step-1); line-height: 1.55; color: var(--ink-2); }
+
+  /* ─── stainless steel ───────────────────────────────────────
+     Metal is anisotropic: it has TWO opposed bright arcs, not one
+     highlight blob. One blob is what makes CSS metal read as plastic.
+     Under that sits the spun-brushing micro-striation.            */
+  .thali {
+    width: min(100%, 420px); margin-inline: auto;
+    position: relative; aspect-ratio: 1; border-radius: 50%;
+    background:
+      var(--grain) 0 0 / 140px 140px repeat,
+      conic-gradient(from -12deg,
+        #FFFFFF00 0deg, #FFFFFF8C 36deg, #FFFFFF00 84deg,
+        #00000047 148deg, #FFFFFF00 194deg, #FFFFFF6B 230deg,
+        #FFFFFF00 282deg, #00000038 332deg, #FFFFFF00 360deg),
+      repeating-conic-gradient(from 0deg at 50% 50%,
+        #EEF2F5 0deg .55deg, #CFD7DD .55deg 1.1deg,
+        #E4EAEF 1.1deg 1.65deg, #D8E0E6 1.65deg 2.2deg),
+      linear-gradient(#DCE3E8, #B9C3CA);
+    background-blend-mode: soft-light, overlay, normal, normal;
+    box-shadow:
+      inset 0 0 0 5px #6E7A84,
+      inset -6px 8px 16px -6px #FFFFFFA6,     /* rim light, upper right   */
+      inset 7px -10px 20px -7px #00000073,    /* occlusion, lower left    */
+      inset 0 0 44px #00000047,
+      0 2px 3px #1A0600A6,
+      0 18px 32px -12px #1A0600C4,
+      0 46px 72px -32px #000000;
+  }
+  /* the pressed circular ridge every steel thali has */
+  .thali::after {
+    content: ""; position: absolute; inset: 9%; border-radius: 50%; pointer-events: none;
+    box-shadow: inset 0 0 0 1px #FFFFFF59, 0 0 0 1px #00000024;
+  }
+
+  /* ─── katoris ───────────────────────────────────────────────
+     Each bowl gets the same three-layer treatment as the kadai at
+     small scale: pigmented base darkest at the far rim, a warm
+     subsurface bloom, and one small hard glint.                   */
+  .katori {
+    position: absolute; border-radius: 50%; translate: -50% -50%;
+    box-shadow:
+      inset 0 0 0 4px #C2CDD4,               /* the bowl's own steel rim */
+      inset -3px 4px 8px -3px #FFFFFF6B,
+      inset 0 8px 18px #000000B3,            /* depth — you look INTO it */
+      0 3px 6px #00000099, 0 10px 18px -6px #000000A6;
+    overflow: hidden; isolation: isolate;
+  }
+  /* subsurface bloom, offset toward the light */
+  .katori::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(56% 46% at 64% 30%, #FFC57D5C, transparent 72%);
+    mix-blend-mode: screen;
+  }
+  /* the glint: small, hard, warm-white, upper right on every bowl */
+  .katori::after {
+    content: ""; position: absolute; left: 62%; top: 21%;
+    width: 20%; aspect-ratio: 2; border-radius: 50%;
+    background: linear-gradient(100deg, #FFFDF4, #FFE9BE99 60%, transparent);
+    rotate: -24deg; filter: blur(.8px); mix-blend-mode: screen;
+  }
+
+  .k-makhani {
+    width: 30%; aspect-ratio: 1; left: 50%; top: 20%;
+    background:
+      radial-gradient(closest-side, transparent 58%, #5E1E0999 100%),
+      radial-gradient(128% 128% at 62% 112%, #E4762F 0%, #E4762F 46%, #8E3411 100%);
+    background-blend-mode: multiply, normal;
+  }
+  /* a drizzle of cream, not a pac-man wedge */
+  .k-makhani .swirl {
+    position: absolute; inset: 0; border-radius: 50%; filter: url(#goo);
+  }
+  .k-makhani .swirl i {
+    position: absolute; display: block; translate: -50% -50%;
+    background: radial-gradient(66% 66% at 38% 32%, #FFF8E7, #EFDCB8);
+    opacity: .9;
+  }
+  .k-makhani .swirl i:nth-child(1) { left: 40%; top: 46%; width: 34%; aspect-ratio: 2.4;
+    border-radius: 58% 42% 47% 53% / 44% 56% 44% 56%; rotate: -18deg; }
+  .k-makhani .swirl i:nth-child(2) { left: 58%; top: 58%; width: 27%; aspect-ratio: 2.1;
+    border-radius: 41% 59% 63% 37% / 52% 38% 62% 48%; rotate: 14deg; }
+
+  .k-curry {
+    width: 28%; aspect-ratio: 1; left: 80%; top: 52%;
+    background:
+      radial-gradient(closest-side, transparent 56%, #2E0F04B3 100%),
+      radial-gradient(128% 128% at 62% 112%, #A83C18 0%, #A83C18 44%, #48160699 100%);
+    background-blend-mode: multiply, normal;
+  }
+  /* bone-in pieces breaking the surface */
+  .k-curry i, .k-chilli i {
+    position: absolute; display: block; translate: -50% -50%;
+    box-shadow: inset 0 -2px 4px #3A11049E, inset 0 2px 3px #FFCE8F4D, 0 2px 5px -1px #1A0600A6;
+  }
+  .k-curry i:nth-child(1) { left: 40%; top: 40%; width: 34%; aspect-ratio: 1.2;
+    border-radius: 58% 42% 47% 53% / 44% 56% 44% 56%; rotate: -22deg;
+    background: radial-gradient(66% 60% at 36% 28%, #D98F4A, #9C4218 52%, #5E2109); }
+  .k-curry i:nth-child(2) { left: 63%; top: 62%; width: 29%; aspect-ratio: 1.3;
+    border-radius: 41% 59% 63% 37% / 52% 38% 62% 48%; rotate: 31deg;
+    background: radial-gradient(66% 60% at 36% 28%, #C97E3E, #8C3813 52%, #521C07); }
+
+  .k-chilli {
+    width: 27%; aspect-ratio: 1; left: 20%; top: 52%;
+    background:
+      radial-gradient(closest-side, transparent 54%, #140A04CC 100%),
+      radial-gradient(128% 128% at 62% 112%, #5A3418 0%, #5A3418 42%, #241206 100%);
+    background-blend-mode: multiply, normal;
+  }
+  /* battered chunks plus the slit green chillies that give it its name */
+  .k-chilli i:nth-child(1) { left: 42%; top: 44%; width: 32%; aspect-ratio: 1.15;
+    border-radius: 62% 38% 44% 56% / 57% 43% 57% 43%; rotate: -14deg;
+    background: radial-gradient(66% 60% at 36% 28%, #E0A75E, #A5661F 54%, #6B3C0E); }
+  .k-chilli i:nth-child(2) { left: 62%; top: 60%; width: 27%; aspect-ratio: 1.25;
+    border-radius: 49% 51% 58% 42% / 38% 62% 38% 62%; rotate: 26deg;
+    background: radial-gradient(66% 60% at 36% 28%, #D49A55, #96591B 54%, #5E340C); }
+  .k-chilli .chilli-slit {
+    position: absolute; left: 36%; top: 66%; width: 46%; height: 9%;
+    border-radius: 999px; rotate: -20deg; translate: -50% -50%;
+    background: linear-gradient(160deg, #A6D451, #6E9E28 58%, #47701A);
+    box-shadow: 0 2px 4px #0A0F0480;
+  }
+  .k-chilli .chilli-slit:nth-of-type(2) { left: 62%; top: 36%; width: 40%; rotate: 16deg; }
+
+  /* ─── rice ──────────────────────────────────────────────────
+     A repeating conic of tiny grains under a soft dome, rather than
+     one beige oval that reads as an egg.                          */
+  .rice {
+    position: absolute; left: 50%; top: 77%; translate: -50% -50%;
+    width: 34%; aspect-ratio: 1.45;
+    border-radius: 54% 46% 52% 48% / 58% 56% 44% 42%;
+    background:
+      var(--grain) 0 0 / 26px 26px repeat,
+      repeating-linear-gradient(63deg, #FFFFFF00 0 3px, #C9BC9E38 3px 4.2px, #FFFFFF00 4.2px 8px),
+      radial-gradient(64% 60% at 40% 30%, #FFFEFA, #DED2B7 82%);
+    background-blend-mode: soft-light, multiply, normal;
+    box-shadow:
+      inset 0 -8px 16px #B8A88240, inset 0 5px 10px #FFFFFFA6,
+      0 3px 8px -1px #1A0600A6, 0 10px 18px -8px #000000A6;
+  }
+
+  /* ─── roti ──────────────────────────────────────────────────
+     Jittered clip-path so no edge is a perfect arc, plus the #char
+     filter for blistered spots. Every roti is a different polygon. */
+  .roti {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    width: 29%; aspect-ratio: 1;
+    clip-path: polygon(50% 1%, 68% 5%, 82% 14%, 93% 28%, 98% 46%, 95% 64%,
+                       85% 79%, 71% 91%, 53% 98%, 36% 96%, 20% 88%,
+                       9% 74%, 2% 57%, 3% 38%, 12% 21%, 27% 8%, 38% 3%);
+    background:
+      var(--grain) 0 0 / 64px 64px repeat,
+      radial-gradient(64% 60% at 38% 30%, #F7E9C6, #E7D2A4 70%, #C9A874 100%);
+    background-blend-mode: soft-light, normal;
+    filter: url(#blister) drop-shadow(0 3px 6px #1A060099);
+  }
+  /* the puffed centre catching the light */
+  .roti::after {
+    content: ""; position: absolute; left: 42%; top: 34%;
+    width: 34%; aspect-ratio: 1.3; border-radius: 52% 48% 44% 56% / 48% 56% 44% 52%;
+    background: radial-gradient(closest-side, #FFF8E0A6, transparent 78%);
+    rotate: -18deg;
+  }
+
+  /* scoped to the reveal — it used to fire on load, ~1000px below the fold,
+     and finish long before anyone scrolled down to see it */
+  @media (prefers-reduced-motion: no-preference) {
+    .js .reveal.in.thali { animation: settle 1s var(--ease) both; }
+    .no-js .thali { animation: settle 1s var(--ease) both; }
+  }
+  @keyframes settle { from { transform: scale(.93) rotate(-5deg); } }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════════════ */
+@layer foot {
+  .site-foot { background: #0E0806; color: #A8927D; border-top: 1px solid #33231B; padding-block: 3rem; font-size: var(--step--1); }
+  .site-foot p { max-width: 68ch; }
+  .site-foot p + p { margin-top: .7rem; }
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ══ FILTER BENCH ══════════════════════════════════════════
+     Four filters, defined once and reused by every food object.
+     All of them are STATIC — the turbulence is evaluated once per
+     element and cached. Nothing here animates its own parameters,
+     because feTurbulence/feDisplacementMap regenerate Perlin noise
+     on the CPU and would cost single-digit FPS on a phone.
+     ═════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" class="filter-bench">
+  <defs>
+    <!-- ragged liquid boundary: turns a perfect circle into a gravy edge.
+         The region has to be widened or the displaced pixels get clipped. -->
+    <filter id="gravyEdge" x="-20%" y="-20%" width="140%" height="140%"
+            filterUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.017" numOctaves="3" seed="17" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- surface tension: separate dollops fuse instead of stacking like stickers -->
+    <filter id="goo" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix" result="goo"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/>
+      <feBlend in="SourceGraphic" in2="goo"/>
+    </filter>
+
+    <!-- tandoor char: a discrete step function turns smooth noise into hard-edged
+         soot blotches, clipped to the piece and merged back over it -->
+    <filter id="char" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.075" numOctaves="3" seed="29" result="n"/>
+      <feComponentTransfer in="n" result="blotch">
+        <feFuncA type="linear" slope="11" intercept="-6.6"/>
+      </feComponentTransfer>
+      <feFlood flood-color="#1B0C04" flood-opacity=".78" result="soot"/>
+      <feComposite in="soot" in2="blotch" operator="in" result="sootOnly"/>
+      <feComposite in="sootOnly" in2="SourceAlpha" operator="in" result="clipped"/>
+      <feGaussianBlur in="clipped" stdDeviation=".9" result="soft"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="soft"/></feMerge>
+    </filter>
+
+    <!-- tandoor blisters on bread: finer and sparser than the chicken char -->
+    <filter id="blister" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.19" numOctaves="2" seed="7" result="n"/>
+      <feComponentTransfer in="n" result="blotch">
+        <feFuncA type="linear" slope="13" intercept="-8.1"/>
+      </feComponentTransfer>
+      <feFlood flood-color="#5A3312" flood-opacity=".72" result="soot"/>
+      <feComposite in="soot" in2="blotch" operator="in" result="sootOnly"/>
+      <feComposite in="sootOnly" in2="SourceAlpha" operator="in" result="clipped"/>
+      <feGaussianBlur in="clipped" stdDeviation=".7" result="soft"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="soft"/></feMerge>
+    </filter>
+
+    <!-- steam: the filter is static, only the source element moves -->
+    <filter id="wisp" x="-45%" y="-25%" width="190%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.031" numOctaves="2" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="24" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- ══ INGREDIENT SPRITE ═════════════════════════════════════
+     Every ingredient on the page, drawn once as a <symbol> and
+     instanced with <use>. Each symbol is a 48x48 box so they all
+     optically match at any size. Nothing here is a network
+     request and nothing here is a font glyph — they are shapes,
+     so they scale, take currentColor, and print.
+     ═════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" class="filter-bench">
+  <defs>
+    <!-- ── whole spices ─────────────────────────────────── -->
+    <symbol id="ing-jeera" viewBox="0 0 48 48">
+      <g fill="#7A5A32">
+        <g transform="rotate(-28 14 17)"><ellipse cx="14" cy="17" rx="7.5" ry="2.6"/></g>
+        <g transform="rotate(18 31 13)"><ellipse cx="31" cy="13" rx="7" ry="2.4"/></g>
+        <g transform="rotate(-8 20 28)"><ellipse cx="20" cy="28" rx="8" ry="2.7"/></g>
+        <g transform="rotate(42 34 30)"><ellipse cx="34" cy="30" rx="6.8" ry="2.3"/></g>
+        <g transform="rotate(-52 13 37)"><ellipse cx="13" cy="37" rx="6.4" ry="2.2"/></g>
+        <g transform="rotate(9 30 40)"><ellipse cx="30" cy="40" rx="7.2" ry="2.5"/></g>
+      </g>
+      <g fill="#C6A268" opacity=".85">
+        <g transform="rotate(-28 14 17)"><rect x="7" y="15.6" width="14" height=".9" rx=".45"/></g>
+        <g transform="rotate(-8 20 28)"><rect x="12" y="26.6" width="16" height=".9" rx=".45"/></g>
+        <g transform="rotate(9 30 40)"><rect x="23" y="38.7" width="14" height=".9" rx=".45"/></g>
+      </g>
+    </symbol>
+
+    <symbol id="ing-dhania" viewBox="0 0 48 48">
+      <g fill="#B9A05C" stroke="#8A7436" stroke-width=".8">
+        <circle cx="15" cy="16" r="6.4"/><circle cx="32" cy="14" r="5.6"/>
+        <circle cx="23" cy="29" r="6.8"/><circle cx="36" cy="31" r="5.2"/>
+        <circle cx="12" cy="34" r="5"/>
+      </g>
+      <g stroke="#8A7436" stroke-width=".7" fill="none" opacity=".8">
+        <path d="M15 9.6v12.8M9.5 14l11 4M9.5 18l11-4"/>
+        <path d="M23 22.2v13.6M17 26.5l12 5M17 31.5l12-5"/>
+      </g>
+      <g fill="#E4D49B" opacity=".7">
+        <ellipse cx="12.6" cy="13.4" rx="2.2" ry="1.5" transform="rotate(-30 12.6 13.4)"/>
+        <ellipse cx="20.6" cy="26.4" rx="2.4" ry="1.6" transform="rotate(-30 20.6 26.4)"/>
+      </g>
+    </symbol>
+
+    <symbol id="ing-kali-mirch" viewBox="0 0 48 48">
+      <g fill="#3B342C">
+        <circle cx="16" cy="17" r="7"/><circle cx="32" cy="15" r="6"/>
+        <circle cx="24" cy="30" r="7.4"/><circle cx="37" cy="32" r="5.4"/><circle cx="12" cy="35" r="5.6"/>
+      </g>
+      <g fill="#0F0C09" opacity=".55">
+        <path d="M16 10a7 7 0 0 1 0 14 7 7 0 0 0 0-14z"/>
+        <path d="M24 22.6a7.4 7.4 0 0 1 0 14.8 7.4 7.4 0 0 0 0-14.8z"/>
+      </g>
+      <g fill="#8E8375" opacity=".75">
+        <ellipse cx="13.4" cy="14" rx="2.3" ry="1.6" transform="rotate(-34 13.4 14)"/>
+        <ellipse cx="21.4" cy="27" rx="2.5" ry="1.7" transform="rotate(-34 21.4 27)"/>
+        <ellipse cx="29.6" cy="12.4" rx="2" ry="1.4" transform="rotate(-34 29.6 12.4)"/>
+      </g>
+    </symbol>
+
+    <symbol id="ing-garam" viewBox="0 0 48 48">
+      <!-- cinnamon quill -->
+      <g transform="rotate(-24 15 30)">
+        <rect x="6" y="25" width="18" height="10" rx="4" fill="#8A4A22"/>
+        <rect x="6" y="25" width="18" height="10" rx="4" fill="none" stroke="#5E2E11" stroke-width=".9"/>
+        <path d="M10 25v10M14 25v10M18 25v10" stroke="#6B3616" stroke-width=".8" opacity=".7"/>
+      </g>
+      <!-- green cardamom -->
+      <g transform="rotate(16 33 17)">
+        <ellipse cx="33" cy="17" rx="6" ry="8.4" fill="#93A85A"/>
+        <path d="M33 8.6v16.8" stroke="#6E8140" stroke-width=".9"/>
+        <path d="M33 8.6c-1.6-2.4-1.2-4 0-4.6 1.2.6 1.6 2.2 0 4.6z" fill="#7C8F4A"/>
+      </g>
+      <!-- clove -->
+      <g transform="rotate(-40 15 13)">
+        <rect x="13.6" y="8" width="2.8" height="11" rx="1.4" fill="#6B3E1C"/>
+        <circle cx="15" cy="7" r="3.4" fill="#8A5527"/>
+        <path d="M15 3.8v6.4M11.8 7h6.4" stroke="#5A3315" stroke-width=".8"/>
+      </g>
+      <!-- black cardamom -->
+      <ellipse cx="35" cy="35" rx="6.4" ry="5" fill="#4A342A" transform="rotate(-14 35 35)"/>
+      <path d="M29.4 34.4c3-1.4 8.2-1.4 11.2 0" stroke="#2E1F18" stroke-width=".9" fill="none"/>
+    </symbol>
+
+    <!-- ── ground spices ────────────────────────────────── -->
+    <symbol id="ing-haldi" viewBox="0 0 48 48">
+      <path d="M6 36c3-11 9-17 18-17s15 6 18 17z" fill="#E0A50F"/>
+      <path d="M6 36c3-11 9-17 18-17s15 6 18 17z" fill="#F6CB55" opacity=".38"/>
+      <ellipse cx="24" cy="36" rx="18" ry="3" fill="#B8850B"/>
+      <g fill="#F6CB55" opacity=".8">
+        <circle cx="17" cy="27" r=".9"/><circle cx="29" cy="25" r=".8"/><circle cx="23" cy="31" r=".7"/>
+      </g>
+      <!-- a knob of the fresh root behind the powder -->
+      <path d="M34 16c4-2 8 0 8 3s-3 4-5 3-4-4-3-6z" fill="#D98A2B"/>
+    </symbol>
+
+    <symbol id="ing-lal-mirch" viewBox="0 0 48 48">
+      <!-- dried Kashmiri chilli: long, wrinkled, deep red -->
+      <path d="M31 8c1.6 3 .6 5.4-1 6.6 3.6 3.2 5.4 8.6 4 14.4-1.6 6.6-6.6 11-11.4 11-4.2 0-6.6-3-6-6.6.8-4.6 4.6-6.2 7.8-8.4 3.6-2.4 5-6.2 4.4-10.6-1.8.4-3.4-.4-4-2.2-.6-2 .8-4 3-4.4z" fill="#B3200F"/>
+      <path d="M28.4 16c2.8 3 4 7.8 2.8 12.6-1.4 5.6-5.4 9.4-9.2 9.4" fill="none" stroke="#7D1206" stroke-width="1.1" opacity=".8"/>
+      <path d="M26 19.4c1.8 2.6 2.4 6 1.6 9.2" fill="none" stroke="#E0563B" stroke-width="1" opacity=".7"/>
+      <path d="M31 8c-1.2-2-3.4-2.6-5.6-1.6" fill="none" stroke="#5E7A28" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="ing-kasuri" viewBox="0 0 48 48">
+      <!-- dried fenugreek: crumbled leaf, not a fresh sprig -->
+      <g fill="#7E8F55">
+        <path d="M12 14c4-3 8-2 9 1s-2 6-5 6-5-4-4-7z"/>
+        <path d="M28 10c4-2 7 0 7 3s-3 5-6 4-2-5-1-7z" opacity=".9"/>
+        <path d="M20 26c5-3 9-1 9 2.4S25 34 21 33s-3-5-1-7z"/>
+        <path d="M9 30c3-2 6-1 6 1.6S12 35 9.6 34 7 31.4 9 30z" opacity=".85"/>
+        <path d="M33 27c3.4-1.6 6 .4 5.4 3s-4 3.4-6 2-1.6-4 .6-5z" opacity=".8"/>
+        <path d="M23 39c3-1.6 5.6 0 5 2.4S23.6 44 21.6 43s-1-3.2 1.4-4z" opacity=".75"/>
+      </g>
+      <g stroke="#4E5C31" stroke-width=".7" fill="none" opacity=".75">
+        <path d="M13.4 20.6 19 15M23 32.4 28 27.6M10.4 33.6 14.4 30.8"/>
+      </g>
+    </symbol>
+
+    <!-- ── the fresh base cast ──────────────────────────── -->
+    <symbol id="ing-pyaz" viewBox="0 0 48 48">
+      <!-- onion, halved through the equator so the rings show -->
+      <path d="M24 6c9 0 17 7.6 17 17.6C41 34.6 33.6 42 24 42S7 34.6 7 23.6C7 13.6 15 6 24 6z" fill="#F0DCC0"/>
+      <path d="M24 6c9 0 17 7.6 17 17.6C41 34.6 33.6 42 24 42" fill="#DCC29E" opacity=".55"/>
+      <g fill="none" stroke="#C9A87E" stroke-width="1.5">
+        <path d="M24 10.5c6.4 0 12.5 5.6 12.5 13.1S31.2 37.5 24 37.5 11.5 31.1 11.5 23.6 17.6 10.5 24 10.5z"/>
+        <path d="M24 15c4.2 0 8 3.8 8 8.6s-3.4 8.4-8 8.4-8-3.6-8-8.4S19.8 15 24 15z"/>
+        <path d="M24 19.6c2 0 3.6 1.8 3.6 4s-1.6 3.9-3.6 3.9-3.6-1.7-3.6-3.9 1.6-4 3.6-4z"/>
+      </g>
+      <path d="M24 6c0-2.4-1.6-4-3-4.6 2.6-.4 4.6.6 5.6 2.2" fill="#A8B86A"/>
+      <ellipse cx="17.5" cy="15" rx="4.6" ry="3" fill="#FFF6E6" opacity=".5" transform="rotate(-34 17.5 15)"/>
+    </symbol>
+
+    <symbol id="ing-tamatar" viewBox="0 0 48 48">
+      <path d="M24 10c9.4 0 16.5 6.4 16.5 15.6S33.4 42 24 42 7.5 34.8 7.5 25.6 14.6 10 24 10z" fill="#C9351B"/>
+      <path d="M24 10c9.4 0 16.5 6.4 16.5 15.6S33.4 42 24 42" fill="#94210D" opacity=".5"/>
+      <path d="M24 10c-4 0-7 1-9.4 2.6 2.6 1 6 1.6 9.4 1.6s6.8-.6 9.4-1.6C31 11 28 10 24 10z" fill="#DE4A2C" opacity=".6"/>
+      <g fill="#5E8A2E">
+        <path d="M24 12c-1.4-2.6-4.6-4-8-3.6 1.6 2.6 4.4 4 8 3.6z"/>
+        <path d="M24 12c1.4-2.6 4.6-4 8-3.6-1.6 2.6-4.4 4-8 3.6z"/>
+        <path d="M24 12c-2.6-1.4-4-4.4-3.6-7.6 2.6 1.6 4 4.2 3.6 7.6z"/>
+        <path d="M24 12c2.6-1.4 4-4.4 3.6-7.6-2.6 1.6-4 4.2-3.6 7.6z"/>
+      </g>
+      <rect x="22.8" y="3" width="2.4" height="5" rx="1.2" fill="#4E7526"/>
+      <ellipse cx="16.6" cy="19.4" rx="5" ry="3.4" fill="#FF9E7A" opacity=".5" transform="rotate(-36 16.6 19.4)"/>
+    </symbol>
+
+    <symbol id="ing-adrak-lehsun" viewBox="0 0 48 48">
+      <!-- ginger knob -->
+      <path d="M8 30c-2-4 1-8 5-8 3 0 4 2 7 2 3.4 0 4.6-3 8-2.4 3.6.6 5 4.4 3 7-2 2.6-5 2-7.4 3.4-2.6 1.6-3 4.6-6.4 4.6-3.6 0-7.2-2.6-9.2-6.6z" fill="#D8A75E"/>
+      <path d="M20 24c2.6-1 4.6-3.6 4-6.4 2.4 1.6 3 4.6 1.4 6.8" fill="#C08F45"/>
+      <g stroke="#A8763A" stroke-width=".8" fill="none" opacity=".8">
+        <path d="M12 27c2 1.4 3.4 3.4 4 5.6M24 25.6c1.6 1.6 2.4 3.6 2.4 5.6"/>
+      </g>
+      <!-- garlic bulb -->
+      <path d="M36 10c3.6 0 6.6 3.4 6.6 7.6S39.6 25 36 25s-6.6-3.2-6.6-7.4S32.4 10 36 10z" fill="#F4EAD8"/>
+      <g fill="none" stroke="#D2C2A6" stroke-width="1.1">
+        <path d="M36 10.4v14.4M32.4 12.4c-1.4 3.4-1.4 7.4 0 10.8M39.6 12.4c1.4 3.4 1.4 7.4 0 10.8"/>
+      </g>
+      <path d="M36 10c0-2.6-1-4.4-2.4-5.4 2.6.2 4.2 1.8 4.6 4" fill="#C6B896"/>
+    </symbol>
+
+    <symbol id="ing-hari-mirch" viewBox="0 0 48 48">
+      <!-- fresh green chilli, slit lengthwise the way it goes into hot oil -->
+      <path d="M30 9c1.4 2.8.4 5-1.2 6.2 4 3.6 5.6 9.6 3.6 15.6-2 6.2-7 10.2-11.6 10.2-4 0-6.4-2.8-5.8-6.4.8-4.6 4.6-6.2 7.8-8.6 3.6-2.6 4.8-6.6 4-11-1.8.4-3.4-.4-4-2.2-.6-2 .8-3.8 3-4.2z" fill="#6FA22C"/>
+      <path d="M27.6 16.4c3 3.4 4 8.6 2.4 13.4-1.8 5.4-5.8 8.8-9.4 8.8" fill="none" stroke="#456C16" stroke-width="1.1" opacity=".85"/>
+      <path d="M25.4 19.6c1.8 2.8 2.2 6.4 1.2 9.6" fill="none" stroke="#B4DA6E" stroke-width="1.2" opacity=".85"/>
+      <path d="M30 9c-1.2-2-3.4-2.6-5.6-1.6" fill="none" stroke="#4E7526" stroke-width="2.4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="ing-makhan" viewBox="0 0 48 48">
+      <!-- butter pat -->
+      <path d="M9 30 17 17h22l-8 13z" fill="#F3CE6A"/>
+      <path d="M17 17h22l-3.4 5.6H13.6z" fill="#FFEBA8"/>
+      <path d="M31 30 39 17v6.6L31 36z" fill="#DDAF45"/>
+      <path d="M9 30h22v6L9 36z" fill="#E8C25A"/>
+    </symbol>
+
+    <symbol id="ing-malai" viewBox="0 0 48 48">
+      <!-- cream, poured -->
+      <path d="M10 34c0-6 6-9 14-9s14 3 14 9c0 4-6 6-14 6s-14-2-14-6z" fill="#FBF2DE"/>
+      <path d="M10 34c0 4 6 6 14 6s14-2 14-6c0-1.6-1-3-2.6-4-1.6 3-6 4.6-11.4 4.6S14.2 33 12.6 30c-1.6 1-2.6 2.4-2.6 4z" fill="#E7D8B8"/>
+      <path d="M24 25c-1.6-4.4-1-9 2-13-4.6 2.4-7 7.6-6 13z" fill="#FBF2DE"/>
+      <ellipse cx="18" cy="29" rx="4.6" ry="2.4" fill="#FFFDF6" opacity=".8" transform="rotate(-12 18 29)"/>
+    </symbol>
+
+    <symbol id="ing-kaju" viewBox="0 0 48 48">
+      <!-- cashews -->
+      <path d="M12 30c-4-1-6-5-4-8.6 2-3.6 6.6-4.4 9.6-2 2 1.6 2.6 4 1.6 5.4-1 1.4-3 1-4-.4" fill="#F0E2C6" stroke="#D6C29C" stroke-width="1"/>
+      <path d="M28 38c-4-1-6-5-4-8.6 2-3.6 6.6-4.4 9.6-2 2 1.6 2.6 4 1.6 5.4-1 1.4-3 1-4-.4" fill="#EADCBE" stroke="#D6C29C" stroke-width="1" transform="rotate(-24 30 33)"/>
+      <path d="M32 18c-4-1-6-5-4-8.6 2-3.6 6.6-4.4 9.6-2 2 1.6 2.6 4 1.6 5.4-1 1.4-3 1-4-.4" fill="#F4E8D0" stroke="#D6C29C" stroke-width="1" transform="rotate(34 34 13)"/>
+    </symbol>
+
+    <symbol id="ing-dahi" viewBox="0 0 48 48">
+      <!-- whisked curd in a katori -->
+      <path d="M8 20h32c0 12-5 18-16 18S8 32 8 20z" fill="#C9D2D8"/>
+      <path d="M8 20h32c0 12-5 18-16 18" fill="#A8B4BC" opacity=".6"/>
+      <ellipse cx="24" cy="20" rx="16" ry="4.6" fill="#FBF6EA"/>
+      <ellipse cx="24" cy="20" rx="16" ry="4.6" fill="none" stroke="#D8DEE2" stroke-width="1"/>
+      <path d="M14 19c3.4-2 7-2.4 10 0s6.6 2 9-.6" fill="none" stroke="#E8E0CE" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- tintable: these take currentColor so the scatter can keep its data-driven
+         palette while every dot becomes an actual chilli silhouette -->
+    <symbol id="chilli-dried" viewBox="0 0 48 48">
+      <path d="M31 8c1.6 3 .6 5.4-1 6.6 3.6 3.2 5.4 8.6 4 14.4-1.6 6.6-6.6 11-11.4 11-4.2 0-6.6-3-6-6.6.8-4.6 4.6-6.2 7.8-8.4 3.6-2.4 5-6.2 4.4-10.6-1.8.4-3.4-.4-4-2.2-.6-2 .8-4 3-4.4z"
+            fill="currentColor" stroke="#241505" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M28.4 16c2.8 3 4 7.8 2.8 12.6-1.4 5.6-5.4 9.4-9.2 9.4" fill="none" stroke="#241505" stroke-width="1.2" opacity=".45"/>
+      <path d="M31 8c-1.2-2-3.4-2.6-5.6-1.6" fill="none" stroke="#4E7526" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="chilli-fresh" viewBox="0 0 48 48">
+      <path d="M30 9c1.4 2.8.4 5-1.2 6.2 4.4 3.8 6 10.2 3.6 16.4-2.2 5.8-7 9.4-11.6 9.4-4 0-6.4-2.8-5.8-6.4.8-4.6 4.6-6.2 7.8-8.6 3.6-2.6 4.8-6.6 4-11-1.8.4-3.4-.4-4-2.2-.6-2 .8-3.8 3-4.2z"
+            fill="currentColor" stroke="#241505" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M25.4 19.6c2 3 2.4 6.8 1.2 10.2" fill="none" stroke="#FFFFFF" stroke-width="1.4" opacity=".38"/>
+      <path d="M30 9c-1.2-2-3.4-2.6-5.6-1.6" fill="none" stroke="#4E7526" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="ing-tel" viewBox="0 0 48 48">
+      <!-- hot oil, the first thing in the pan -->
+      <path d="M24 6c6 8 11 13.4 11 19.6C35 33.4 30 39 24 39s-11-5.6-11-13.4C13 19.4 18 14 24 6z" fill="#E8A63C"/>
+      <path d="M24 6c6 8 11 13.4 11 19.6C35 33.4 30 39 24 39" fill="#C67F1C" opacity=".5"/>
+      <path d="M19 26c-1.6 3.4-.6 7 2.4 8.6" fill="none" stroke="#FFE0A0" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+      <ellipse cx="20" cy="20" rx="3.4" ry="2.2" fill="#FFF0C8" opacity=".7" transform="rotate(-38 20 20)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <a class="logo" href="#top"><span class="dot" aria-hidden="true"></span>Gravy&nbsp;Theory</a>
+    <nav aria-label="Sections">
+      <ul>
+        <li><a href="#base">The base</a></li>
+        <li><a href="#split">The split</a></li>
+        <li><a href="#clock">The clock</a></li>
+        <li><a href="#chilli">Green chilli</a></li>
+        <li><a href="#dabba">The dabba</a></li>
+        <li><a href="#decide">Tonight</a></li>
+      </ul>
+    </nav>
+    <button type="button" class="toggle" id="motion" aria-pressed="false"
+            title="Stop the looping animations">
+      <svg class="toggle__ico" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path class="toggle__play" d="M6.4 5.2 11 8l-4.6 2.8z" fill="currentColor"/>
+        <path class="toggle__pause" d="M6 5h1.6v6H6zm2.9 0h1.6v6H8.9z" fill="currentColor"/>
+      </svg>
+      <span id="motion-label">Pause motion</span>
+    </button>
+    <button type="button" class="toggle" id="theme">Dim the lights</button>
+  </div>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+</header>
+
+<main id="main">
+
+<!-- ══ HERO ══════════════════════════════════════════════ -->
+<section class="hero night" id="top" aria-labelledby="h-hero">
+  <div class="wrap hero__grid">
+    <div>
+      <p class="label lift" style="--i:0">Field notes · North Indian gravy</p>
+      <h1 id="h-hero">
+        <span class="ln lift" style="--i:1">Three chickens.</span>
+        <span class="ln lift" style="--i:2">One base.</span>
+        <span class="ln lift" style="--i:3"><em>One defector.</em></span>
+      </h1>
+      <p class="hero__deck lift" style="--i:4">
+        Butter chicken and chicken curry are not different recipes. They are the
+        <strong>same onion–tomato masala</strong>, stopped at different moments and finished in
+        different directions. Chilli chicken never touches it at all.
+      </p>
+      <div class="hero__cta lift" style="--i:5">
+        <a class="btn btn--solid" href="#base">Cook the base →</a>
+        <a class="btn btn--ghost" href="#decide">Just tell me what to make</a>
+      </div>
+    </div>
+
+    <div class="lift" style="--i:4">
+      <div class="kadai live plated" role="img" aria-label="A kadai of butter chicken seen from above: pieces of tandoori chicken half-submerged in a glossy tomato gravy, a swirl of cream, a melting pat of butter and torn coriander.">
+        <div class="kadai__pool" style="--c1:#E4762F;--c2:#B94A17;--f:60%;--sep:.9">
+          <!-- no two pieces share a silhouette or a rotation; repeated shapes
+               read as clones the moment you have more than three of them -->
+          <span class="kadai__pieces" aria-hidden="true">
+            <i style="--x:36%;--y:33%;--w:26%;--rot:-16deg;--r:58% 42% 47% 53% / 44% 56% 44% 56%"></i>
+            <i style="--x:63%;--y:44%;--w:24%;--rot:27deg;--r:41% 59% 63% 37% / 52% 38% 62% 48%"></i>
+            <i style="--x:44%;--y:63%;--w:27%;--rot:-38deg;--r:66% 34% 38% 62% / 61% 55% 45% 39%"></i>
+            <i style="--x:70%;--y:68%;--w:21%;--rot:8deg;--r:49% 51% 58% 42% / 38% 62% 38% 62%"></i>
+            <i style="--x:29%;--y:55%;--w:20%;--rot:52deg;--r:62% 38% 44% 56% / 57% 43% 57% 43%"></i>
+          </span>
+          <span class="kadai__garnish" aria-hidden="true">
+            <i class="cream"></i><i class="cream"></i><i class="cream"></i>
+            <i class="butter"></i>
+          </span>
+          <span class="leaf" style="left:22%;top:68%;rotate:24deg" aria-hidden="true"></span>
+          <span class="leaf" style="left:71%;top:26%;rotate:-38deg" aria-hidden="true"></span>
+          <span class="leaf" style="left:63%;top:75%;rotate:8deg" aria-hidden="true"></span>
+          <span class="kadai__lit" aria-hidden="true"></span>
+        </div>
+        <div class="steam" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <div class="stamp" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs><path id="ring" d="M50,50 m-37,0 a37,37 0 1,1 74,0 a37,37 0 1,1 -74,0"/></defs>
+        <!-- textLength pins the string to the ring's exact circumference (2*pi*37).
+             Without it the tracked text ran long and overprinted its own start. -->
+        <text><textPath href="#ring" startOffset="0" textLength="232.4"
+              lengthAdjust="spacing">Ghar ka khana · Ghar ka khana ·</textPath></text>
+      </svg>
+      <b>18′</b>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <dl class="stats lift" style="--i:6">
+      <div><dt>1</dt><dd>Shared base</dd></div>
+      <div><dt>3</dt><dd>Dishes</dd></div>
+      <div><dt>7</dt><dd>Tins in the dabba</dd></div>
+      <div><dt>18′</dt><dd>Until the oil breaks</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══ TICKER ════════════════════════════════════════════ -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__row">
+    <span>Jeera<i></i>Haldi<i></i>Dhania<i></i>Kashmiri lal mirch<i></i>Garam masala<i></i>Kasuri methi<i></i>Kali mirch<i></i>Hari mirch<i></i></span>
+    <span>Jeera<i></i>Haldi<i></i>Dhania<i></i>Kashmiri lal mirch<i></i>Garam masala<i></i>Kasuri methi<i></i>Kali mirch<i></i>Hari mirch<i></i></span>
+  </div>
+</div>
+
+<!-- ══ 01 THE BASE ═══════════════════════════════════════ -->
+<section class="band night" id="base" aria-labelledby="h-base">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">One · The base</p>
+      <h2 id="h-base">Cook the masala. Watch it change.</h2>
+      <p class="lede">Recipes give you minutes. Cooks give you colour. Drag the dial and the
+        masala moves from raw to done — the same base that becomes both gravies below.</p>
+    </div>
+
+    <!-- the whole cast of the base. Six things, in the order they hit the pan. -->
+    <ol class="cast reveal" style="--i:1" aria-label="The six ingredients of the shared base, in the order they go in">
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-tel"/></svg><b>Tel</b><span>Oil</span></li>
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-jeera"/></svg><b>Jeera</b><span>Cumin</span></li>
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-pyaz"/></svg><b>Pyaz</b><span>Onion</span></li>
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-adrak-lehsun"/></svg><b>Adrak–lehsun</b><span>Ginger &amp; garlic</span></li>
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-tamatar"/></svg><b>Tamatar</b><span>Tomato</span></li>
+      <li><svg class="ing" aria-hidden="true"><use href="#ing-haldi"/></svg><b>Masale</b><span>Ground spices</span></li>
+    </ol>
+
+    <div class="lab">
+      <div class="reveal" style="--i:1">
+        <div class="kadai" id="pan">
+          <div class="kadai__pool">
+            <span class="kadai__bits" aria-hidden="true"></span>
+            <span class="kadai__lit" aria-hidden="true"></span>
+          </div>
+          <div class="steam" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+
+      <div class="reveal" style="--i:2">
+        <div class="dial">
+          <div class="dial__label">
+            <label for="bhuna">Bhuna — how far the masala has cooked</label>
+            <span class="dial__hint" id="dial-hint"><span class="dial__hint-vis" aria-hidden="true">← → to nudge</span><span class="sr-only">Use the left and right arrow keys to nudge the dial</span></span>
+          </div>
+          <input type="range" id="bhuna" min="0" max="100" value="100" step="1" aria-describedby="dial-hint">
+          <div class="ticks" id="ticks" aria-hidden="true">
+            <span>Raw</span><span>Gold</span><span>Tomato</span><span>Bhuna</span><span>Done</span>
+          </div>
+        </div>
+
+        <div class="readout">
+          <p class="readout__meta">
+            <span>T + <b id="mins">18</b> min</span>
+            <span>Stage <b id="stage-n">05</b> of 05</span>
+          </p>
+          <h3 id="stage-title" aria-live="polite">Oil separates</h3>
+          <p id="readout-body">The masala pulls into a single mass and a rim of orange oil pools
+            at the edge of the pan. This is the only doneness cue that matters. Everything after
+            this point is a choice.</p>
+        </div>
+
+        <ul class="ladder" id="ladder">
+          <li data-at="0"><svg class="ing" aria-hidden="true"><use href="#ing-tel"/></svg><b>0:00</b><span>Oil, hot. Whole spices until they sputter.</span></li>
+          <li data-at="20"><svg class="ing" aria-hidden="true"><use href="#ing-pyaz"/></svg><b>0:40</b><span>Onion, sliced fine. Salt now — it pulls the water out.</span></li>
+          <li data-at="42"><svg class="ing" aria-hidden="true"><use href="#ing-adrak-lehsun"/></svg><b>4:00</b><span>Ginger–garlic paste. Cook until it stops smelling raw.</span></li>
+          <li data-at="55"><svg class="ing" aria-hidden="true"><use href="#ing-tamatar"/></svg><b>6:00</b><span>Tomato. It loosens everything, then tightens again.</span></li>
+          <li data-at="66"><svg class="ing" aria-hidden="true"><use href="#ing-haldi"/></svg><b>9:00</b><span>Ground spices, with a splash of water so they bloom.</span></li>
+          <li data-at="88"><svg class="ing" aria-hidden="true"><use href="#ing-tel"/></svg><b>18:00</b><span>Oil at the edges. Stop. The base is done.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 02 THE SPLIT ══════════════════════════════════════ -->
+<section class="band paper" id="split" aria-labelledby="h-split">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Two · The split</p>
+      <h2 id="h-split">Same pan, three endings</h2>
+      <p class="lede">Two of these dishes argue about how far to take the base. The third refuses
+        the argument entirely.</p>
+    </div>
+
+    <div class="tabs reveal" role="tablist" aria-label="Three chicken dishes" style="--i:1">
+      <button type="button" role="tab" id="tab-curry" aria-controls="p-curry" aria-selected="true"><i style="background:#97371A"></i>Chicken curry</button>
+      <button type="button" role="tab" id="tab-makhani" aria-controls="p-makhani" aria-selected="false" tabindex="-1"><i style="background:#E4762F"></i>Butter chicken</button>
+      <button type="button" role="tab" id="tab-chilli" aria-controls="p-chilli" aria-selected="false" tabindex="-1"><i style="background:#8CBF3F"></i>Chilli chicken</button>
+    </div>
+
+    <div class="dish" id="p-curry" role="tabpanel" aria-labelledby="tab-curry" tabindex="0">
+      <div class="dish__grid">
+        <div>
+          <p class="dish__tag">Takes the base all the way</p>
+          <h3>Chicken curry</h3>
+          <p>The honest one. You cook the base past brick red, then put raw chicken straight into
+            it and let the meat give up its own liquid. Nothing softens the edges — no cream, no
+            cashew, no butter. What you taste is browned onion and time.</p>
+          <p>It gets better overnight, which is the whole argument for making it on a Sunday.
+            Every family's version is slightly wrong to every other family.</p>
+        </div>
+        <div class="diverge card">
+          <p class="adds">On top of the base<span class="adds__row">
+            <svg class="ing" aria-hidden="true"><use href="#ing-dahi"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-garam"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-hari-mirch"/></svg>
+          </span><em>Curd, garam masala, green chilli</em></p>
+          <p class="diverge__h">Where it leaves the base</p>
+          <dl>
+            <div class="diverge__row"><dt>Stop at</dt><dd>Stage 5 — full bhuna, oil separated</dd></div>
+            <div class="diverge__row"><dt>Chicken</dt><dd>Raw, bone-in, cooked in the masala</dd></div>
+            <div class="diverge__row"><dt>Liquid</dt><dd>Hot water, or whisked curd off the heat</dd></div>
+            <div class="diverge__row"><dt>Fat</dt><dd>Mustard or refined oil. No dairy.</dd></div>
+            <div class="diverge__row"><dt>Finish</dt><dd>Garam masala and coriander, heat off</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- no `hidden` in the markup: the UA sheet honours it regardless of the .js class,
+         so with JS off two thirds of this section used to disappear. JS hides these on init. -->
+    <div class="dish" id="p-makhani" role="tabpanel" aria-labelledby="tab-makhani" tabindex="0">
+      <div class="dish__grid">
+        <div>
+          <p class="dish__tag">Leaves the base early, on purpose</p>
+          <h3>Butter chicken</h3>
+          <p>A restaurant dish pretending to be a home one. It ducks out of the base before the
+            onions brown — you want tomato sweetness, not caramel depth — then simmers, gets
+            blitzed smooth, and comes back enriched with butter, cashew and cream.</p>
+          <p>The chicken is cooked separately and joins at the end, carrying char from the tandoor.
+            Kasuri methi is crushed between your palms over the pan in the last thirty seconds.
+            Skip it and the dish tastes like tomato soup.</p>
+        </div>
+        <div class="diverge card">
+          <p class="adds">On top of the base<span class="adds__row">
+            <svg class="ing" aria-hidden="true"><use href="#ing-makhan"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-kaju"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-malai"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-kasuri"/></svg>
+          </span><em>Butter, cashew, cream, kasuri methi</em></p>
+          <p class="diverge__h">Where it leaves the base</p>
+          <dl>
+            <div class="diverge__row"><dt>Stop at</dt><dd>Stage 3 — before the onions darken</dd></div>
+            <div class="diverge__row"><dt>Chicken</dt><dd>Marinated, charred separately, added last</dd></div>
+            <div class="diverge__row"><dt>Liquid</dt><dd>Cashew paste, cream, a little sugar</dd></div>
+            <div class="diverge__row"><dt>Fat</dt><dd>Butter, and then more butter</dd></div>
+            <div class="diverge__row"><dt>Finish</dt><dd>Kasuri methi, crushed in by hand</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="dish" id="p-chilli" role="tabpanel" aria-labelledby="tab-chilli" tabindex="0">
+      <div class="dish__grid">
+        <div>
+          <p class="dish__tag">Never enters the base at all</p>
+          <h3>Chilli chicken</h3>
+          <p>Indo-Chinese, born in Kolkata's Hakka kitchens, and it plays by wok rules instead of
+            gravy rules. Chicken goes into cornflour batter and hot oil. The pan gets screaming
+            hot, aromatics go in for seconds rather than minutes, and the whole thing finishes in
+            about four.</p>
+          <p>The green chillies are the point. Slit lengthwise and dropped into hot oil, they give
+            an aroma that reaches the back of your nose before any heat reaches your tongue.
+            Cook them a moment too long and you lose it.</p>
+        </div>
+        <div class="diverge card">
+          <p class="adds adds--none">Instead of the base<span class="adds__row">
+            <svg class="ing" aria-hidden="true"><use href="#ing-hari-mirch"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-kali-mirch"/></svg>
+            <svg class="ing" aria-hidden="true"><use href="#ing-adrak-lehsun"/></svg>
+          </span><em>Green chilli, white pepper, garlic — and nothing above</em></p>
+          <p class="diverge__h">Why it isn't a curry</p>
+          <dl>
+            <div class="diverge__row"><dt>Base</dt><dd>None. There is no masala.</dd></div>
+            <div class="diverge__row"><dt>Chicken</dt><dd>Battered and deep-fried first</dd></div>
+            <div class="diverge__row"><dt>Heat</dt><dd>Highest your burner goes, start to end</dd></div>
+            <div class="diverge__row"><dt>Season</dt><dd>Soy, vinegar, green chilli, white pepper</dd></div>
+            <div class="diverge__row"><dt>Clock</dt><dd>Four minutes in the wok, not eighteen</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ THE FORK ══════════════════════════════════════════
+     The signature moment. Everything above this section is one
+     pan; everything below it is a decision. The lines draw the
+     split, the two gravies arrive, and the third pan slides in
+     from the right and stops short — it never joins.
+     ═════════════════════════════════════════════════════════ -->
+<section class="band night fork" id="fork" aria-labelledby="fork-h">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Two and a half · The fork</p>
+      <h2 id="fork-h">This is where they part</h2>
+      <p class="lede">Everything above this line is one pan. Everything below it is a choice
+        about what to do next — and one of the three never turns up to make it.</p>
+    </div>
+
+    <div class="fork__stage reveal" role="img" aria-describedby="fork-alt">
+      <svg class="fork__lines" viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
+        <!-- pathLength=1 normalises every path so one dashoffset value draws them all -->
+        <path class="fork__line" pathLength="1" d="M43.6,15.3 C39,20 32,23 27,28.2"/>
+        <path class="fork__line" pathLength="1" style="--d:120ms" d="M56.4,15.3 C61,20 68,23 70,28.2"/>
+        <!-- the one that goes nowhere: it sets off toward the wok and stops short -->
+        <path class="fork__line fork__line--dead" pathLength="1" style="--d:900ms" d="M58,4.8 L73,16"/>
+      </svg>
+
+      <div class="fork__pan fork__pan--base kadai plated">
+        <div class="kadai__pool" style="--c1:#D98A3F;--c2:#A8451A;--f:55%;--sep:.75">
+          <span class="kadai__lit" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="fork__pan fork__pan--child fork__pan--curry kadai plated">
+        <div class="kadai__pool" style="--c1:#B4551F;--c2:#5E1E09;--f:82%;--sep:1">
+          <span class="kadai__pieces" aria-hidden="true">
+            <i style="--x:40%;--y:38%;--w:30%;--rot:-18deg;--r:58% 42% 47% 53% / 44% 56% 44% 56%"></i>
+            <i style="--x:62%;--y:62%;--w:27%;--rot:29deg;--r:41% 59% 63% 37% / 52% 38% 62% 48%"></i>
+          </span>
+          <span class="kadai__lit" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="fork__pan fork__pan--child fork__pan--makhani kadai plated">
+        <div class="kadai__pool" style="--c1:#F08A3E;--c2:#C4551E;--f:42%;--sep:.85">
+          <span class="kadai__pieces" aria-hidden="true">
+            <i style="--x:38%;--y:42%;--w:28%;--rot:22deg;--r:66% 34% 38% 62% / 61% 55% 45% 39%"></i>
+            <i style="--x:63%;--y:58%;--w:25%;--rot:-34deg;--r:49% 51% 58% 42% / 38% 62% 38% 62%"></i>
+          </span>
+          <span class="kadai__garnish" aria-hidden="true"><i class="cream"></i><i class="cream"></i><i class="cream"></i></span>
+          <span class="kadai__lit" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <!-- the defector: a wok, not a kadai, and it stops short of the junction -->
+      <div class="fork__pan fork__pan--outsider wok">
+        <div class="wok__pool">
+          <span class="wok__slit"></span><span class="wok__slit"></span>
+          <span class="kadai__lit" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <p class="fork__tag fork__tag--base">The base<b>stage five</b></p>
+      <p class="fork__tag fork__tag--left">Chicken curry<b>takes it all the way</b></p>
+      <p class="fork__tag fork__tag--right">Butter chicken<b>leaves early, comes back rich</b></p>
+      <p class="fork__tag fork__tag--out">Chilli chicken<b>does not arrive here</b></p>
+    </div>
+
+    <p id="fork-alt" class="sr-only">A diagram of the split. One pan of onion-tomato base at the
+      top divides along two curves into chicken curry on the left, cooked darker, and butter
+      chicken on the right, stopped earlier and enriched with cream. A fourth vessel, a wok
+      holding chilli chicken, sits apart on the right; the line reaching toward it breaks off
+      before it connects, because chilli chicken never uses the base at all.</p>
+  </div>
+</section>
+
+<!-- ══ 03 THE CLOCK ══════════════════════════════════════ -->
+<section class="band paper" id="clock" aria-labelledby="h-clock">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Three · The clock</p>
+      <h2 id="h-clock">Where the three dishes spend their time</h2>
+      <p class="lede">Read across. The gravies front-load everything into one long browning; the
+        wok spends its time on prep and almost none on heat.</p>
+    </div>
+
+    <div class="gantt reveal" style="--i:1" role="img"
+         aria-label="How the three dishes spend their cooking time" aria-describedby="gantt-desc">
+      <div class="gantt__row">
+        <p class="gantt__name">Chicken curry<small>42 min · one pan</small></p>
+        <div class="gantt__track">
+          <span class="gantt__seg" style="--d:0;left:0%;width:40%;background:#97371A">Base · 18 min</span>
+          <span class="gantt__seg" style="--d:120;left:40.5%;width:10.5%;background:#A44A18">Sear</span>
+          <span class="gantt__seg on-light" data-short="18′" style="--d:240;left:51.5%;width:39.5%;background:#D08A44">Simmer · 18 min</span>
+          <span class="gantt__seg" style="--d:360;left:91.5%;width:8.5%;background:#8CBF3F"></span>
+        </div>
+      </div>
+      <div class="gantt__row">
+        <p class="gantt__name">Butter chicken<small>24 min · two pans</small></p>
+        <div class="gantt__track">
+          <span class="gantt__seg" data-short="10′" style="--d:60;left:0%;width:21.5%;background:#97371A">Base · 10 min</span>
+          <span class="gantt__seg on-light" style="--d:180;left:22%;width:13.5%;background:#D08A44">Blend</span>
+          <span class="gantt__seg on-light" style="--d:300;left:36%;width:15.5%;background:#F0A03C">Enrich</span>
+          <span class="gantt__seg parallel" data-short="Tandoor" style="--d:420;left:18%;width:20%;background:#5E4A3E">Tandoor, in parallel</span>
+          <span class="gantt__seg" style="--d:520;left:52%;width:6%;background:#8CBF3F"></span>
+        </div>
+      </div>
+      <div class="gantt__row">
+        <p class="gantt__name">Chilli chicken<small>16 min · wok</small></p>
+        <div class="gantt__track">
+          <span class="gantt__seg" style="--d:140;left:0%;width:17.5%;background:#5E4A3E">Batter</span>
+          <span class="gantt__seg on-light" style="--d:260;left:18%;width:8.5%;background:#F0A03C">Fry</span>
+          <span class="gantt__seg" data-short="4′" style="--d:380;left:27%;width:9%;background:#B32E10">Wok · 4′</span>
+        </div>
+      </div>
+      <div class="gantt__axis">
+        <span></span>
+        <!-- ticks are evenly spaced, so the values must be too: the scale is a linear
+             45 minutes across the track, and 0/10/20/30/45 put every bar 2-4 min out -->
+        <div class="gantt__mins"><span>0</span><span>11</span><span>22</span><span>34</span><span>45 min</span></div>
+      </div>
+    </div>
+
+    <p id="gantt-desc" class="sr-only">Chicken curry runs forty-two minutes in a single pan:
+      eighteen minutes building the base, a short sear, eighteen minutes of simmering, then a
+      finish. Butter chicken runs twenty-four minutes across two pans, with the chicken charring
+      in parallel while the gravy is blended and enriched. Chilli chicken runs sixteen minutes
+      total, of which only the final four are spent in the wok.</p>
+
+    <!-- not aria-hidden: colour is the only thing distinguishing the phases, so the
+         key is content, not decoration -->
+    <div class="legend reveal" style="--i:2">
+      <span><i style="background:#97371A"></i>Building the base</span>
+      <span><i style="background:#D08A44"></i>Wet cooking</span>
+      <span><i style="background:#F0A03C"></i>Fat and enrichment</span>
+      <span><i style="background:#5E4A3E"></i>Off-pan prep</span>
+      <span><i style="background:#B32E10"></i>High heat</span>
+      <span><i style="background:#8CBF3F"></i>Finishing herbs</span>
+    </div>
+
+    <div class="pull reveal" style="--i:3">
+      <p>Butter chicken is the only one of the three that <b>needs two burners</b>. That single
+        constraint is why it belongs to restaurants, and why the home version never tastes
+        quite the same.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 04 GREEN CHILLI ═══════════════════════════════════ -->
+<section class="band paper" id="chilli" aria-labelledby="h-chilli">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Four · Green chilli</p>
+      <h2 id="h-chilli">Heat is the boring axis</h2>
+      <p class="lede">Scoville measures one thing badly. Plot aroma against it and the Indian
+        green chilli sits somewhere nothing else does — moderate heat, enormous smell.</p>
+    </div>
+
+    <div class="chart-grid">
+      <!-- axis captions live outside .plot and are laid out by grid, not absolute
+           positioning — the rotated one used to render 7px from the viewport edge -->
+      <div class="plot-wrap reveal" style="--i:1">
+        <span class="plot__y" aria-hidden="true">Aroma intensity →</span>
+        <div class="plot" id="plot" role="radiogroup" aria-label="Chillies plotted by heat in Scoville on a logarithmic horizontal axis against aroma intensity on the vertical axis"></div>
+        <span class="plot__x" aria-hidden="true">Heat — Scoville, log scale →</span>
+        <p class="plot__note">
+          The horizontal axis is logarithmic. On a linear one, everything except the ghost pepper
+          would pile into the left edge.
+        </p>
+      </div>
+
+      <div class="chilli-card card reveal" style="--i:2">
+        <p class="sub" id="ch-sub">Capsicum annuum · used fresh</p>
+        <h3 id="ch-name" aria-live="polite">Hari mirch</h3>
+        <dl class="nums">
+          <div><dt>Scoville</dt><dd id="ch-shu">30,000</dd></div>
+          <div><dt>Aroma</dt><dd id="ch-aroma">92</dd></div>
+        </dl>
+        <p id="ch-body">The Indian green chilli, and the reason chilli chicken smells the way it
+          does. Slit it, drop it in hot oil, and the volatile compounds hit the air within
+          seconds — grassy, sharp, almost citrus. That smell is gone if you cook it for more than
+          a minute, which is exactly why the wok phase is short.</p>
+      </div>
+
+      <ul class="chart-fallback">
+        <li><b>Kashmiri</b> — around 1,800 SHU. Colour, not heat.</li>
+        <li><b>Byadgi</b> — around 10,000 SHU. Mild, wrinkled, deep red.</li>
+        <li><b>Hari mirch</b> — around 30,000 SHU with the highest aroma of the group.</li>
+        <li><b>Guntur sannam</b> — around 40,000 SHU. Blunt heat, little smell.</li>
+        <li><b>Bird's eye</b> — around 100,000 SHU. Sharp and quick.</li>
+        <li><b>Bhut jolokia</b> — around 1,000,000 SHU. Almost no aroma to speak of.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 05 THE DABBA ══════════════════════════════════════ -->
+<section class="band night" id="dabba" aria-labelledby="h-dabba">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Five · The dabba</p>
+      <h2 id="h-dabba">Seven tins, seven jobs</h2>
+      <p class="lede">Every Indian kitchen has one steel box with seven compartments and no
+        labels. Pick a tin to see what it does — and what breaks when it's missing.</p>
+    </div>
+
+    <div class="dabba-grid">
+      <div class="dabba reveal" style="--i:1" id="dabba-box" role="radiogroup" aria-label="Masala dabba with seven spice tins"></div>
+      <div class="spice-card card reveal" style="--i:2">
+        <p class="sub" id="sp-sub">Ground blend · added off the heat</p>
+        <h3 id="sp-name" aria-live="polite">Garam masala</h3>
+        <dl>
+          <div class="spice-card__row"><dt>Goes in</dt><dd id="sp-when">Last. After the heat is off.</dd></div>
+          <div class="spice-card__row"><dt>Job</dt><dd id="sp-job">Aroma, not flavour. Warmth you smell rather than taste — cardamom, clove, cinnamon, black pepper.</dd></div>
+          <div class="spice-card__row"><dt>Skip it</dt><dd id="sp-skip">The curry tastes finished but flat. Nothing announces itself when the lid comes off.</dd></div>
+        </dl>
+      </div>
+
+      <ul class="dabba-fallback">
+        <li><b>Garam masala</b> — last, off the heat. Aroma rather than flavour.</li>
+        <li><b>Haldi</b> — early, with the ginger–garlic. Earthy base note and colour.</li>
+        <li><b>Kashmiri lal mirch</b> — with the tomato. Deep red colour, mild heat.</li>
+        <li><b>Dhania</b> — the bulk of the spice. Body and a faint citrus.</li>
+        <li><b>Jeera</b> — first, into hot oil. Must sputter before anything else goes in.</li>
+        <li><b>Kasuri methi</b> — crushed by hand at the very end. Essential to butter chicken.</li>
+        <li><b>Kali mirch</b> — sharp, immediate heat. The Indo-Chinese kitchen's chilli.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 06 DECIDER ════════════════════════════════════════ -->
+<section class="band paper" id="decide" aria-labelledby="h-decide">
+  <div class="wrap">
+    <div class="band__head reveal">
+      <p class="label">Six · Tonight</p>
+      <h2 id="h-decide">So which one are you actually making?</h2>
+      <p class="lede">Three questions. It's a constraint problem, not a taste problem.</p>
+    </div>
+
+    <div class="quiz reveal" style="--i:1">
+      <fieldset class="q">
+        <legend>How long have you got?</legend>
+        <div class="opts">
+          <label><input type="radio" name="time" value="short"><span>Under 20 minutes</span></label>
+          <label><input type="radio" name="time" value="mid"><span>About half an hour</span></label>
+          <label><input type="radio" name="time" value="long"><span>An hour, unbothered</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="q">
+        <legend>Who's eating?</legend>
+        <div class="opts">
+          <label><input type="radio" name="who" value="solo"><span>Just me</span></label>
+          <label><input type="radio" name="who" value="family"><span>The family</span></label>
+          <label><input type="radio" name="who" value="guest"><span>Someone I'm out to impress</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="q">
+        <legend>What's next to it on the plate?</legend>
+        <div class="opts">
+          <label><input type="radio" name="side" value="roti"><span>Roti</span></label>
+          <label><input type="radio" name="side" value="rice"><span>Rice</span></label>
+          <label><input type="radio" name="side" value="none"><span>Nothing — it's the whole meal</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="verdict card reveal" style="--i:2" id="verdict" data-empty="true">
+      <p class="verdict__idle">Answer all three and the pan picks itself.</p>
+      <div class="verdict__body">
+        <p class="sub" id="v-sub"></p>
+        <h3 id="v-name" aria-live="polite"></h3>
+        <p id="v-why"></p>
+        <a href="#split" id="v-link">Read the method →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CLOSER ════════════════════════════════════════════ -->
+<section class="band night closer" aria-labelledby="h-closer">
+  <div class="wrap closer__grid">
+    <div class="reveal">
+      <p class="label">Seven</p>
+      <h2 id="h-closer">Learn the base and you stop needing recipes</h2>
+      <p>Once you can see the moment the oil separates, every gravy in this cuisine becomes a
+        single decision about what to do next: darken it, enrich it, or walk away from it
+        entirely.</p>
+      <div class="hero__cta"><a class="btn btn--solid" href="#base">Go back to the pan →</a></div>
+    </div>
+    <div class="thali reveal" style="--i:1" role="img" aria-label="A steel thali seen from above: butter chicken under a drizzle of cream, chicken curry with bone-in pieces, chilli chicken with slit green chillies, a mound of rice, and a blistered roti in the centre.">
+      <span class="katori k-makhani" aria-hidden="true">
+        <span class="swirl"><i></i><i></i></span>
+      </span>
+      <span class="katori k-curry" aria-hidden="true"><i></i><i></i></span>
+      <span class="katori k-chilli" aria-hidden="true">
+        <i></i><i></i>
+        <span class="chilli-slit"></span><span class="chilli-slit"></span>
+      </span>
+      <span class="rice" aria-hidden="true"></span>
+      <span class="roti" aria-hidden="true"></span>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <p>Built for the DEV Frontend Challenge — Comfort Food Edition. One HTML file, no framework,
+      no build step, no tracking. Every ingredient, pan, thali and chilli on this page is drawn in
+      CSS and inline SVG — there is not a single image request. Every section is readable and
+      operable with JavaScript switched off.</p>
+    <p>MIT licensed.</p>
+  </div>
+</footer>
+
+<script type="module">
+"use strict";
+/* ────────────────────────────────────────────────────────────
+   Progressive enhancement only. With JS off the page still
+   delivers every fact: tabs become stacked panels, and the two
+   interactive readouts fall back to static lists.
+   ──────────────────────────────────────────────────────────── */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+
+/* ══ one-of-N radio group ══════════════════════════════════════
+   `aria-pressed` models a set of N independent toggles. A set where
+   exactly one member is active is the APG radio-group pattern, so the
+   chilli scatter and the masala dabba both use this: one tab stop
+   instead of six and seven, arrow keys to move, selection follows
+   focus, and screen readers announce "3 of 6" instead of "pressed".
+   ─────────────────────────────────────────────────────────────── */
+const radioGroup = (container, items, build, onSelect) => {
+  const radios = items.map((item, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    build(b, item, i);
+    b.addEventListener("click", () => select(i));
+    return b;
+  });
+  const select = (i, focus = false) => {
+    radios.forEach((r, k) => {
+      r.setAttribute("aria-checked", String(k === i));
+      r.tabIndex = k === i ? 0 : -1;
+    });
+    if (focus) radios[i].focus();
+    onSelect(items[i], i);
+  };
+  container.addEventListener("keydown", e => {
+    const i = radios.indexOf(document.activeElement);
+    if (i < 0) return;
+    const to = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1,
+                 ArrowUp: i - 1, Home: 0, End: radios.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    select((to + radios.length) % radios.length, true);
+  });
+  radios.forEach(r => container.append(r));
+  return select;
+};
+
+/* ══ dim the lights ══ */
+(() => {
+  const root = document.documentElement, btn = $("#theme");
+  const paint = () => {
+    btn.textContent = root.dataset.theme === "dim" ? "Bring the lights up" : "Dim the lights";
+  };
+  btn.addEventListener("click", () => {
+    root.dataset.theme = root.dataset.theme === "dim" ? "" : "dim";
+    paint();
+    try { localStorage.setItem("gt-theme", root.dataset.theme); } catch {}
+  });
+  try { root.dataset.theme = localStorage.getItem("gt-theme") || ""; } catch {}
+  paint();
+})();
+
+/* ══ stop the looping motion ══
+   WCAG 2.2.2: the ticker, the rotating stamp, the burner flicker and the steam
+   all loop indefinitely. A :hover pause is reachable by neither keyboard nor
+   touch, so this is the conformance mechanism — one control, all of them. */
+(() => {
+  const root = document.documentElement, btn = $("#motion"), label = $("#motion-label");
+  const paint = () => {
+    const off = root.dataset.motion === "off";
+    label.textContent = off ? "Play motion" : "Pause motion";
+    btn.setAttribute("aria-pressed", String(off));
+  };
+  btn.addEventListener("click", () => {
+    root.dataset.motion = root.dataset.motion === "off" ? "" : "off";
+    paint();
+    try { localStorage.setItem("gt-motion", root.dataset.motion); } catch {}
+  });
+  try { root.dataset.motion = localStorage.getItem("gt-motion") || ""; } catch {}
+  /* someone turning on Reduce Motion mid-session should not have to reload */
+  if (reduced.matches) { root.dataset.motion = "off"; }
+  reduced.addEventListener("change", e => {
+    if (e.matches) { root.dataset.motion = "off"; paint(); $$(".reveal").forEach(el => el.classList.add("in")); }
+  });
+  paint();
+})();
+
+/* ══ scroll reveals ══ */
+(() => {
+  const items = $$(".reveal");
+  if (reduced.matches || !("IntersectionObserver" in window)) {
+    items.forEach(el => el.classList.add("in")); return;
+  }
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add("in"); io.unobserve(e.target);
+  }), { rootMargin: "0px 0px -12% 0px", threshold: .1 });
+  items.forEach(el => io.observe(el));
+})();
+
+/* ══ progress + active section ══ */
+(() => {
+  const bar = $("#progress");
+  const links = $$(".masthead nav a");
+  const targets = links.map(a => $(a.getAttribute("href"))).filter(Boolean);
+  let ticking = false;
+  const update = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.style.setProperty("--p", max > 0 ? (scrollY / max).toFixed(4) : 0);
+    let active = -1;
+    targets.forEach((s, i) => { if (s.getBoundingClientRect().top <= innerHeight * .35) active = i; });
+    links.forEach((a, i) => i === active
+      ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current"));
+    ticking = false;
+  };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
+})();
+
+/* ══ bhuna meter ══ */
+(() => {
+  const STOPS = ["#E0A184", "#CF7043", "#B44A1E", "#97371A", "#5E1E09"];
+  const STAGES = [
+    { at: 0,  mins: 0,  title: "Kaccha masala",
+      body: "Raw and pale. The onion still tastes like onion and the ginger–garlic smells sharp. Nothing added now will taste of anything yet." },
+    { at: 20, mins: 4,  title: "Onions turn",
+      body: "Translucent, then gold at the edges. The raw smell lifts. Most people stop somewhere around here and wonder why their curry tastes thin." },
+    { at: 42, mins: 8,  title: "Tomato breaks",
+      body: "The tomato collapses and loosens everything into a slack, bright mass. It will look wrong. Keep going." },
+    { at: 66, mins: 14, title: "The bhuna",
+      body: "Colour deepens to brick and the mass starts pulling away from the sides of the pan. This is the part every recipe compresses into two words and every cook gives ten minutes." },
+    { at: 88, mins: 18, title: "Oil separates",
+      body: "The masala pulls into a single mass and a rim of orange oil pools at the edge of the pan. This is the only doneness cue that matters. Everything after this point is a choice." }
+  ];
+
+  const pan = $("#pan"), pool = $(".kadai__pool", pan), dial = $("#bhuna");
+  const el = { mins: $("#mins"), n: $("#stage-n"), title: $("#stage-title"), body: $("#readout-body") };
+  const ticks = $$("#ticks span"), rungs = $$("#ladder li");
+
+  /* Browned onion and spice sediment. Modular arithmetic (i*37%84) correlates the
+     two axes and lays the fragments out on a visible diagonal lattice, so this
+     uses a seeded LCG instead — deterministic, but without the grid. sqrt on the
+     radius keeps the density even instead of clumping at the centre. */
+  const bits = $(".kadai__bits", pan);
+  let seed = 9;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF) / 0x7FFFFFFF;
+  for (let i = 0; i < 34; i++) {
+    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 43;
+    const b = document.createElement("i");
+    b.style.left = (50 + r * Math.cos(a)).toFixed(1) + "%";
+    b.style.top = (50 + r * Math.sin(a)).toFixed(1) + "%";
+    b.style.rotate = (rnd() * 180).toFixed(0) + "deg";
+    b.style.scale = (.62 + rnd() * .85).toFixed(2);
+    bits.append(b);
+  }
+
+  let last = -1;
+  const cook = v => {
+    /* interpolate the two adjacent stops in OKLCH — sRGB blends
+       go grey through the middle of a warm ramp, OKLCH doesn't */
+    const p = (v / 100) * (STOPS.length - 1);
+    const i = Math.min(Math.floor(p), STOPS.length - 2);
+    pool.style.setProperty("--c1", STOPS[i]);
+    pool.style.setProperty("--c2", STOPS[i + 1]);
+    pool.style.setProperty("--f", ((p - i) * 100).toFixed(1) + "%");
+    pool.style.setProperty("--sep", Math.min(1, Math.max(0, (v - 58) / 42)).toFixed(2));
+    pan.style.setProperty("--heat", Math.min(1, v / 45).toFixed(2));
+
+    let s = 0;
+    for (let k = 0; k < STAGES.length; k++) if (v >= STAGES[k].at) s = k;
+    dial.setAttribute("aria-valuetext", `${STAGES[s].title}, about ${STAGES[s].mins} minutes in`);
+    ticks.forEach((t, k) => t.dataset.on = String(k === s));
+    rungs.forEach(r => r.dataset.live = String(v >= +r.dataset.at));
+
+    if (s === last) return;   /* throttle the live region to stage changes */
+    last = s;
+    el.mins.textContent = STAGES[s].mins;
+    el.n.textContent = String(s + 1).padStart(2, "0");
+    el.title.textContent = STAGES[s].title;
+    el.body.textContent = STAGES[s].body;
+  };
+
+  dial.addEventListener("input", e => cook(+e.target.value));
+  cook(+dial.value);
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([e]) => pan.classList.toggle("live", e.isIntersecting)).observe(pan);
+  } else { pan.classList.add("live"); }
+})();
+
+/* ══ dish tabs ══ */
+(() => {
+  const list = $('[role="tablist"]'), tabs = $$('[role="tab"]', list);
+  const select = (tab, focus = true) => {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      $("#" + t.getAttribute("aria-controls")).hidden = !on;
+    });
+    if (focus) tab.focus();
+  };
+  list.addEventListener("click", e => {
+    const t = e.target.closest('[role="tab"]'); if (t) select(t, false);
+  });
+  list.addEventListener("keydown", e => {
+    const i = tabs.indexOf(document.activeElement); if (i < 0) return;
+    const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault(); select(tabs[(to + tabs.length) % tabs.length]);
+  });
+  /* the panels ship visible so the section survives with JS off; collapse them now */
+  select(tabs[0], false);
+  /* focus the newly-revealed tab when we arrive here from the decider, so a
+     keyboard user isn't dropped into a section that silently changed underneath them */
+  window.__selectDish = id => select($("#tab-" + id), true);
+})();
+
+/* ══ chilli scatter ══ */
+(() => {
+  const DATA = [
+    { kind: "dried", rot: -8, name: "Kashmiri", sub: "Dried · ground for colour", shu: 1800, aroma: 45, c: "#C0341A", hi: false,
+      body: "Barely hot, and that is the point. It is how butter chicken gets a deep restaurant red without the heat that would come from a chilli that actually burns." },
+    { kind: "dried", rot: 14, name: "Byadgi", sub: "Dried · Karnataka", shu: 10000, aroma: 55, c: "#A32A15", hi: false,
+      body: "Wrinkled, dark, and gentler than it looks. Ground into a paste it gives body and colour together, which is why it turns up in so many South Indian gravies." },
+    { kind: "fresh", rot: -4, name: "Hari mirch", sub: "Capsicum annuum · used fresh", shu: 30000, aroma: 92, c: "#5F8A1E", hi: true,
+      body: "The Indian green chilli, and the reason chilli chicken smells the way it does. Slit it, drop it in hot oil, and the volatile compounds hit the air within seconds — grassy, sharp, almost citrus. That smell is gone if you cook it for more than a minute, which is exactly why the wok phase is short." },
+    { kind: "dried", rot: 22, name: "Guntur sannam", sub: "Dried · Andhra Pradesh", shu: 40000, aroma: 30, c: "#8E1F0E", hi: false,
+      body: "Blunt instrument. Serious heat with very little smell behind it, so it raises the temperature of a dish without adding anything you could describe as flavour." },
+    { kind: "fresh", rot: -18, name: "Bird's eye", sub: "Fresh · small and quick", shu: 100000, aroma: 60, c: "#3F7A22", hi: false,
+      body: "Sharper and faster than hari mirch. The heat arrives immediately and leaves quickly, which suits a stir-fry and overwhelms a slow gravy." },
+    { kind: "fresh", rot: 9, name: "Bhut jolokia", sub: "Fresh · Assam and Nagaland", shu: 1000000, aroma: 35, c: "#6B1408", hi: false,
+      body: "A thousand times hotter than Kashmiri and roughly as aromatic. Almost everything you notice about it is pain, which is the clearest argument this chart makes." }
+  ];
+  const X0 = 2.5, X1 = 6.2;
+  const x = d => ((Math.log10(d.shu) - X0) / (X1 - X0)) * 84 + 8;
+  const y = d => 92 - (d.aroma / 100) * 78;
+
+  const plot = $("#plot");
+  const out = { name: $("#ch-name"), sub: $("#ch-sub"), shu: $("#ch-shu"), aroma: $("#ch-aroma"), body: $("#ch-body") };
+
+  radioGroup(plot, DATA,
+    (b, d) => {
+      b.className = "chilli";
+      /* the silhouette takes currentColor, so the plot keeps its data-driven
+         palette while every marker is an actual chilli rather than a dot */
+      b.style.cssText = `left:${x(d).toFixed(1)}%;top:${y(d).toFixed(1)}%;color:${d.c};--rot:${d.rot}deg`;
+      b.setAttribute("aria-label", `${d.name}, ${d.shu.toLocaleString("en-IN")} Scoville, aroma ${d.aroma} out of 100`);
+      b.innerHTML =
+        `<svg class="chilli__art" aria-hidden="true"><use href="#chilli-${d.kind}"/></svg>` +
+        `<span class="chilli__lbl">${d.name}</span>`;
+    },
+    d => {
+      out.name.textContent = d.name;
+      out.sub.textContent = d.sub;
+      out.shu.textContent = d.shu.toLocaleString("en-IN");
+      out.aroma.textContent = d.aroma;
+      out.body.textContent = d.body;
+    }
+  )(DATA.findIndex(d => d.hi));
+})();
+
+/* ══ masala dabba ══ */
+(() => {
+  const SPICES = [
+    /* `i` is the label ink — the light tins need dark text to clear 4.5:1 */
+    { short: "Garam<br>masala", c: "#A84E1B", i: "#FFF3E0", sym: "ing-garam", name: "Garam masala", sub: "Ground blend · added off the heat",
+      when: "Last. After the heat is off.",
+      job: "Aroma, not flavour. Warmth you smell rather than taste — cardamom, clove, cinnamon, black pepper.",
+      skip: "The curry tastes finished but flat. Nothing announces itself when the lid comes off." },
+    { short: "Haldi", c: "#E0A50F", i: "#241505", sym: "ing-haldi", name: "Haldi", sub: "Turmeric · ground root",
+      when: "Early, with the ginger–garlic paste.",
+      job: "Earthy bitterness underneath everything else, plus the yellow that red chilli then sits on top of.",
+      skip: "The colour goes flat orange and the gravy loses its floor. Too much and it turns chalky." },
+    { short: "Lal<br>mirch", c: "#C0341A", i: "#FFF3E0", sym: "ing-lal-mirch", name: "Kashmiri lal mirch", sub: "Ground chilli · colour over heat",
+      when: "With the tomato, in a splash of water so it blooms instead of burning.",
+      job: "Deep restaurant red with very little heat. This is how butter chicken gets its colour honestly.",
+      skip: "You reach for a hotter chilli to get the same colour, and the dish burns instead of glowing." },
+    { short: "Dhania", c: "#9C8449", i: "#241505", sym: "ing-dhania", name: "Dhania", sub: "Coriander seed · ground",
+      when: "With the other ground spices, around minute nine.",
+      job: "The bulk of the mix. Body, thickness, and a faint citrus that keeps the gravy from tasting heavy.",
+      skip: "The gravy is thin and the other spices have nothing to sit in." },
+    { short: "Jeera", c: "#6E5233", i: "#FFF3E0", sym: "ing-jeera", name: "Jeera", sub: "Cumin · whole seed",
+      when: "First. Into hot oil, before anything else.",
+      job: "It must sputter within a few seconds. If it doesn't, your oil is not hot enough and the whole base will be underdone.",
+      skip: "You lose the opening note, and nothing else in the dish is doing that job." },
+    { short: "Kasuri<br>methi", c: "#7E8F55", i: "#241505", sym: "ing-kasuri", name: "Kasuri methi", sub: "Dried fenugreek leaf",
+      when: "Final thirty seconds, crushed between your palms over the pan.",
+      job: "Faintly bitter, faintly maple. It is the smell people cannot name in butter chicken.",
+      skip: "Butter chicken tastes like sweet tomato soup with cream. This is the one that gives it away." },
+    { short: "Kali<br>mirch", c: "#3A3630", i: "#FFF3E0", sym: "ing-kali-mirch", name: "Kali mirch", sub: "Black pepper · coarse",
+      when: "At the end, or into the wok for chilli chicken.",
+      job: "Sharp, immediate heat that arrives and leaves quickly — unlike chilli, which builds and stays.",
+      skip: "Indo-Chinese dishes lose their bite entirely. Pepper, not chilli, is doing that work." }
+  ];
+
+  const box = $("#dabba-box");
+  const out = { name: $("#sp-name"), sub: $("#sp-sub"), when: $("#sp-when"), job: $("#sp-job"), skip: $("#sp-skip") };
+
+  radioGroup(box, SPICES,
+    (b, s, i) => {
+      b.className = "spice";
+      let cx = 50, cy = 50;
+      if (i > 0) {
+        const a = (-90 + (i - 1) * 60) * Math.PI / 180;
+        cx = 50 + 34 * Math.cos(a); cy = 50 + 34 * Math.sin(a);
+      }
+      b.style.cssText = `left:${cx.toFixed(2)}%;top:${cy.toFixed(2)}%;--sc:${s.c};--si:${s.i}`;
+      b.setAttribute("aria-label", s.name);
+      b.innerHTML =
+        `<svg class="ing spice__art" aria-hidden="true"><use href="#${s.sym}"/></svg>` +
+        `<span class="spice__name" aria-hidden="true">${s.short}</span>`;
+    },
+    s => {
+      out.name.textContent = s.name; out.sub.textContent = s.sub;
+      out.when.textContent = s.when; out.job.textContent = s.job; out.skip.textContent = s.skip;
+    }
+  )(0);
+})();
+
+/* ══ decider ══ */
+(() => {
+  const DISHES = {
+    curry:   { tab: "curry", name: "Chicken curry", sub: "One pan · 42 minutes",
+      why: "You have the time and the base rewards it. Nothing here needs a second burner or an ingredient you don't already have." },
+    makhani: { tab: "makhani", name: "Butter chicken", sub: "Two pans · 24 minutes",
+      why: "It looks like effort without taking the longest, and char plus cream is the most reliably impressive combination in this cuisine." },
+    chilli:  { tab: "chilli", name: "Chilli chicken", sub: "Wok · 16 minutes",
+      why: "Fast, loud, and it eats fine on its own. Get the oil properly hot and keep the green chillies in for under a minute." }
+  };
+  const v = $("#verdict");
+  const out = { name: $("#v-name"), sub: $("#v-sub"), why: $("#v-why"), link: $("#v-link") };
+  const answers = {};
+  let last = null;
+  const WEIGHTS = {
+    time: { short: { chilli: 3 }, mid: { makhani: 2, chilli: 1 }, long: { curry: 3 } },
+    who:  { solo: { chilli: 2 }, family: { curry: 2 }, guest: { makhani: 3 } },
+    side: { roti: { makhani: 2, curry: 1 }, rice: { curry: 2 }, none: { chilli: 3 } }
+  };
+
+  $$(".opts input").forEach(input => input.addEventListener("change", () => {
+    answers[input.name] = input.value;
+    if (Object.keys(answers).length < 3) return;
+
+    const score = { curry: 0, makhani: 0, chilli: 0 };
+    for (const [q, a] of Object.entries(answers))
+      for (const [dish, pts] of Object.entries(WEIGHTS[q][a])) score[dish] += pts;
+
+    const key = Object.entries(score).sort((a, b) => b[1] - a[1])[0][0];
+    if (key === last) return;   /* same guard the bhuna stage already uses */
+    last = key;
+    const d = DISHES[key];
+    out.name.textContent = d.name;
+    out.sub.textContent = d.sub;
+    out.why.textContent = d.why;
+    out.link.textContent = `Read the ${d.name.toLowerCase()} method →`;
+    out.link.onclick = () => window.__selectDish(d.tab);
+    v.dataset.empty = "false";
+  }));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# local assistant/session state, not part of the project
+.remember/
+.claude/
+
+# editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
